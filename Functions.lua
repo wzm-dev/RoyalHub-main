@@ -41,6 +41,8 @@ G.AimbotEnabled     = { normal = false, rage = false }
 G.FOVEnabled        = true     -- aimbot só pega alvo dentro do círculo
 G.FOVRadius         = 120      -- raio em PIXELS
 G.FOVShowCircle     = true     -- desenhar o círculo na tela
+G.FOVColor          = Color3.fromRGB(255, 255, 255)
+G.FOVThickness      = 1
 G.AimbotConns       = {}
 G.TargetPart        = "Head"
 G.MaxDistance       = 1500
@@ -322,6 +324,10 @@ end
 local function _clearLines()
     for _, d in pairs(G.EspLineDrawings) do pcall(function() d:Remove() end) end
     G.EspLineDrawings = {}
+    if G._EspLinesByPlayer then
+        for _, d in pairs(G._EspLinesByPlayer) do pcall(function() d:Remove() end) end
+        G._EspLinesByPlayer = nil
+    end
 end
 
 function G.toggleEspLines(enabled)
@@ -329,29 +335,47 @@ function G.toggleEspLines(enabled)
     if G.EspLinesConn then G.EspLinesConn:Disconnect() G.EspLinesConn = nil end
     _clearLines()
     if not enabled then notify("ESP Lines","Desativado.",2,"x") return end
+
+    -- UMA linha por jogador, criada 1x e só ATUALIZADA por frame.
+    -- (o método antigo destruía/recriava todas as linhas todo RenderStepped,
+    --  o GC/executors engasgavam e as linhas sumiam em mapas pesados)
+    local perPlayer = {}
+    G._EspLinesByPlayer = perPlayer
+
+    local function getLineFor(p)
+        if perPlayer[p] and perPlayer[p].Parent ~= nil then return perPlayer[p] end
+        local ok, line = pcall(Drawing.new, "Line")
+        if not ok then return nil end
+        line.Visible = false
+        line.Color = Color3.fromRGB(255,55,55)
+        line.Thickness = 1
+        line.Transparency = 0.4
+        perPlayer[p] = line
+        return line
+    end
+
     G.EspLinesConn = S.Run.RenderStepped:Connect(function()
-        _clearLines()
         if not G.EspLinesEnabled then return end
         local cam = workspace.CurrentCamera
         local vp  = cam.ViewportSize
         local bot = Vector2.new(vp.X / 2, vp.Y)
         for _, player in ipairs(S.Players:GetPlayers()) do
-            if player ~= LP and player.Character then
-                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hrp and hum and hum.Health > 0 then
-                    local sp, onScreen = cam:WorldToViewportPoint(hrp.Position)
-                    if onScreen then
-                        local ok, line = pcall(Drawing.new, "Line")
-                        if ok then
-                            line.Visible = true; line.From = bot
+            local line = getLineFor(player)
+            if line then
+                local show = false
+                if player ~= LP and player.Character then
+                    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                    if hrp and hum and hum.Health > 0 then
+                        local sp, onScreen = cam:WorldToViewportPoint(hrp.Position)
+                        if onScreen then
+                            show = true
+                            line.From = bot
                             line.To = Vector2.new(sp.X, sp.Y)
-                            line.Color = Color3.fromRGB(255,55,55)
-                            line.Thickness = 1; line.Transparency = 0.4
-                            table.insert(G.EspLineDrawings, line)
                         end
                     end
                 end
+                line.Visible = show
             end
         end
     end)
@@ -363,20 +387,42 @@ end
 ------------------------------------------------------------------------
 function G.toggleHitboxESP(enabled)
     G.HitboxESPEnabled = enabled
-    for player, _ in pairs(G.HitboxOriginals) do
-        if player and player.Character then
-            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local existing = hrp:FindFirstChild("RH_HitboxBox")
-                if enabled and not existing then
-                    local sel = Instance.new("SelectionBox")
-                    sel.Name = "RH_HitboxBox"; sel.Adornee = hrp
-                    sel.Color3 = Color3.fromRGB(255,60,60); sel.LineThickness = 0.04
-                    sel.SurfaceTransparency = 0.75; sel.SurfaceColor3 = Color3.fromRGB(255,60,60)
-                    sel.Parent = hrp
-                elseif not enabled and existing then
-                    existing:Destroy()
-                end
+    local function applyToChar(char)
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local existing = hrp:FindFirstChild("RH_HitboxBox")
+        if enabled and not existing then
+            local sel = Instance.new("SelectionBox")
+            sel.Name = "RH_HitboxBox"; sel.Adornee = hrp
+            sel.Color3 = Color3.fromRGB(255,60,60); sel.LineThickness = 0.04
+            sel.SurfaceTransparency = 0.75; sel.SurfaceColor3 = Color3.fromRGB(255,60,60)
+            sel.Parent = hrp
+        elseif not enabled and existing then
+            existing:Destroy()
+        end
+    end
+    -- aplica em TODOS os players agora (não só quem está na lista do expander)
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p ~= LP then
+            applyToChar(p.Character)
+        end
+    end
+    -- e nos que spawnarem depois
+    if G.HitboxESPConn then G.HitboxESPConn:Disconnect() G.HitboxESPConn = nil end
+    if enabled then
+        G.HitboxESPConn = S.Players.PlayerAdded:Connect(function(p)
+            p.CharacterAdded:Connect(function(c)
+                task.wait(0.5)
+                if G.HitboxESPEnabled then applyToChar(c) end
+            end)
+        end)
+        for _, p in ipairs(S.Players:GetPlayers()) do
+            if p ~= LP then
+                p.CharacterAdded:Connect(function(c)
+                    task.wait(0.5)
+                    if G.HitboxESPEnabled then applyToChar(c) end
+                end)
             end
         end
     end
@@ -684,16 +730,19 @@ end
 local function _updateFovCircle()
     local circle = _ensureFovCircle()
     if not circle then return end
-    local show = G.FOVShowCircle and (G.AimbotEnabled.normal or G.AimbotEnabled.rage or G.SilentAimEnabled)
-    if not show then
+    -- aparece sempre que "Mostrar Círculo" está ligado,
+    -- independente do aimbot estar ativo ou não
+    if not G.FOVShowCircle then
         circle.Visible = false
         return
     end
     local cam = workspace.CurrentCamera
     local vp  = cam.ViewportSize
-    circle.Position = Vector2.new(vp.X / 2, vp.Y / 2)
-    circle.Radius   = G.FOVRadius
-    circle.Visible  = true
+    circle.Position  = Vector2.new(vp.X / 2, vp.Y / 2)
+    circle.Radius    = G.FOVRadius
+    circle.Color     = G.FOVColor
+    circle.Thickness = G.FOVThickness
+    circle.Visible   = true
 end
 
 -- desenha o círculo junto do aimbot (RenderStepped, 1 conn só)
@@ -701,11 +750,36 @@ if not G._FovRenderConn then
     G._FovRenderConn = S.Run.RenderStepped:Connect(function() pcall(_updateFovCircle) end)
 end
 
+function G.setFovColor(c)     G.FOVColor = c end
+function G.setFovThickness(v) G.FOVThickness = v end
+
 ------------------------------------------------------------------------
 -- AIMBOT (com FOV: só pega alvo dentro do círculo)
 ------------------------------------------------------------------------
--- AIMBOT (com FOV: só pega alvo dentro do círculo)
-------------------------------------------------------------------------
+-- pega o ponto 2D (pixels) de uma posição 3D no mundo
+local function worldToScreen(pos)
+    local cam = workspace.CurrentCamera
+    local sp, onScreen = cam:WorldToViewportPoint(pos)
+    return Vector2.new(sp.X, sp.Y), onScreen
+end
+
+-- distância em pixels do centro da tela
+local function screenDistFromCenter(screenPos)
+    local cam = workspace.CurrentCamera
+    local vp  = cam.ViewportSize
+    local dx  = screenPos.X - vp.X / 2
+    local dy  = screenPos.Y - vp.Y / 2
+    return math.sqrt(dx * dx + dy * dy)
+end
+
+-- alvo dentro do círculo de FOV?
+local function isTargetInFOV(part)
+    if not G.FOVEnabled then return true end -- FOV desligado = sem limite
+    local sp, onScreen = worldToScreen(part.Position)
+    if not onScreen then return false end
+    return screenDistFromCenter(sp) <= G.FOVRadius
+end
+
 local function getClosestTarget()
     local cam = workspace.CurrentCamera
     -- com FOV: procuramos o mais próximo do CROSSHAIR (px), não do mundo (studs)

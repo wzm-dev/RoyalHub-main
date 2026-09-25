@@ -465,6 +465,23 @@ TabHome:CreateSlider({
     callback = function(value) G.FOVRadius = value end,
 })
 
+TabHome:CreateSlider({
+    name = "FOV Espessura",
+    description = "Espessura da linha do círculo.",
+    range = { 1, 5 },
+    increment = 1,
+    value = 1,
+    flag = "FOVThickness",
+    callback = function(value) G.setFovThickness(value) end,
+})
+
+TabHome:CreateColorPicker({
+    name = "FOV Cor",
+    color = Color3.fromRGB(255, 255, 255),
+    flag = "FOVColor",
+    callback = function(color) G.setFovColor(color) end,
+})
+
 TabHome:CreateToggle({
     name = "Ignorar Aliados (Team Check)",
     value = true,
