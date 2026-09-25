@@ -1,0 +1,332 @@
+{
+    // Place your RoyalHub workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+    // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+    // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+    // used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+    // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+    // Placeholders with the same ids are connected.
+    // Example:
+    // "Print to console": {
+    // 	"scope": "javascript,typescript",
+    // 	"prefix": "log",
+    // 	"body": [
+    // 		"console.log('$1');",
+    // 		"$2"
+    // 	],
+    // 	"description": "Log output to console"
+    // }
+    //
+    // You can also restrict snippets to specific files using include/exclude patterns:
+    "WindUI Create Window Full": {
+        "scope": "lua",
+        "prefix": ":window",
+        "body": [
+            "local Window = WindUI:CreateWindow({",
+            "    Title = \"$1\",",
+            "    Author = \"$2\",",
+            "    Folder = \"$3\",",
+            "    Size = UDim2.fromOffset($4, $5),",
+            "    Transparent = $6,",
+            "    Theme = \"$7\",",
+            "    SideBarWidth = $8,",
+            "    $0",
+            "})"
+        ],
+        "description": "Cria janela completa no WindUI"
+    },
+    "WindUI Create Tab": {
+        "scope": "lua",
+        "prefix": ":CTab",
+        "body": [
+            "local Tab = Window:Tab({",
+            "    Title = \"$1\",",
+            "    Icon = \"$2\",",
+            "    Desc = \"$3\",",
+            "    IconColor = \"Color3.fromRGB(255, 100, 100)\",",
+            "    IconShape = \"$5\",",
+            "    IconThemed = \"$6\",",
+            "    Locked = \"$7\",",
+            "    ShowTabTitle = \"$8\",",
+            "    Border = \"$9\",",
+            "})"
+        ],
+        "description": "Cria uma tab do WindUI"
+    },
+    "WindUI Create tab full": {
+        "scope": "lua",
+        "prefix": ":CTabFull",
+        "body": [
+            "local Tab = Window:Tab({",
+            "    Title = \"${1:My Tab}\",",
+            "    Desc = \"${2:Tab description}\",",
+            "    Icon = \"${3:bird}\",",
+            "    IconColor = Color3.fromRGB(${4:255}, ${5:100}, ${6:100}),",
+            "    IconShape = \"${7:Square}\",",
+            "    IconThemed = ${8:true},",
+            "    Locked = ${9:false},",
+            "    ShowTabTitle = ${10:false},",
+            "    Border = ${11:true},",
+            "    $0",
+            "})"
+        ],
+        "description": "Cria uma aba completa no WindUI"
+    },
+    "WindUI Theme Simple": {
+        "scope": "lua",
+        "prefix": ":theme",
+        "body": [
+            "WindUI:AddTheme({",
+            "    Name = \"${1:Dark}\",",
+            "",
+            "    Accent = Color3.fromHex(\"${2:#18181b}\"),",
+            "    Background = Color3.fromHex(\"${3:#101010}\"),",
+            "    Outline = Color3.fromHex(\"${4:#FFFFFF}\"),",
+            "    Text = Color3.fromHex(\"${5:#FFFFFF}\"),",
+            "    Placeholder = Color3.fromHex(\"${6:#7a7a7a}\"),",
+            "    Button = Color3.fromHex(\"${7:#52525b}\"),",
+            "    Icon = Color3.fromHex(\"${8:#a1a1aa}\"),",
+            "    $0",
+            "})"
+        ],
+        "description": "Tema simples do WindUI"
+    },
+    "WindUI Theme Full": {
+        "scope": "lua",
+        "prefix": ":themefull",
+        "body": [
+            "WindUI:AddTheme({",
+            "    Name = \"${1:Dark}\",",
+            "",
+            "    Accent = Color3.fromHex(\"${2:#18181b}\"),",
+            "    Background = Color3.fromHex(\"${3:#101010}\"),",
+            "    BackgroundTransparency = ${4:0},",
+            "    Outline = Color3.fromHex(\"${5:#FFFFFF}\"),",
+            "    Text = Color3.fromHex(\"${6:#FFFFFF}\"),",
+            "    Placeholder = Color3.fromHex(\"${7:#7a7a7a}\"),",
+            "    Button = Color3.fromHex(\"${8:#52525b}\"),",
+            "    Icon = Color3.fromHex(\"${9:#a1a1aa}\"),",
+            "",
+            "    Primary = Color3.fromHex(\"${10:#0091FF}\"),",
+            "    Hover = Color3.fromHex(\"${11:#FFFFFF}\"),",
+            "",
+            "    WindowBackground = Color3.fromHex(\"${12:#101010}\"),",
+            "    WindowShadow = Color3.fromHex(\"${13:#000000}\"),",
+            "",
+            "    DialogBackground = Color3.fromHex(\"${14:#101010}\"),",
+            "    DialogBackgroundTransparency = ${15:0},",
+            "    DialogTitle = Color3.fromHex(\"${16:#FFFFFF}\"),",
+            "    DialogContent = Color3.fromHex(\"${17:#FFFFFF}\"),",
+            "    DialogIcon = Color3.fromHex(\"${18:#a1a1aa}\"),",
+            "",
+            "    WindowTopbarButtonIcon = Color3.fromHex(\"${19:#a1a1aa}\"),",
+            "    WindowTopbarTitle = Color3.fromHex(\"${20:#FFFFFF}\"),",
+            "    WindowTopbarAuthor = Color3.fromHex(\"${21:#FFFFFF}\"),",
+            "    WindowTopbarIcon = Color3.fromHex(\"${22:#FFFFFF}\"),",
+            "",
+            "    TabBackground = Color3.fromHex(\"${23:#FFFFFF}\"),",
+            "    TabTitle = Color3.fromHex(\"${24:#FFFFFF}\"),",
+            "    TabIcon = Color3.fromHex(\"${25:#a1a1aa}\"),",
+            "",
+            "    ElementBackground = Color3.fromHex(\"${26:#FFFFFF}\"),",
+            "    ElementTitle = Color3.fromHex(\"${27:#FFFFFF}\"),",
+            "    ElementDesc = Color3.fromHex(\"${28:#FFFFFF}\"),",
+            "    ElementIcon = Color3.fromHex(\"${29:#a1a1aa}\"),",
+            "",
+            "    PopupBackground = Color3.fromHex(\"${30:#101010}\"),",
+            "    PopupBackgroundTransparency = ${31:0},",
+            "    PopupTitle = Color3.fromHex(\"${32:#FFFFFF}\"),",
+            "    PopupContent = Color3.fromHex(\"${33:#FFFFFF}\"),",
+            "    PopupIcon = Color3.fromHex(\"${34:#a1a1aa}\"),",
+            "",
+            "    Toggle = Color3.fromHex(\"${35:#52525b}\"),",
+            "    ToggleBar = Color3.fromHex(\"${36:#FFFFFF}\"),",
+            "",
+            "    Checkbox = Color3.fromHex(\"${37:#52525b}\"),",
+            "    CheckboxIcon = Color3.fromHex(\"${38:#FFFFFF}\"),",
+            "    CheckboxBorder = Color3.fromHex(\"${39:#FFFFFF}\"),",
+            "    CheckboxBorderTransparency = ${40:0.75},",
+            "",
+            "    Slider = Color3.fromHex(\"${41:#52525b}\"),",
+            "    SliderThumb = Color3.fromHex(\"${42:#FFFFFF}\"),",
+            "    SliderIconFrom = Color3.fromHex(\"${43:#908F95}\"),",
+            "    SliderIconTo = Color3.fromHex(\"${44:#908F95}\"),",
+            "",
+            "    Tooltip = Color3.fromHex(\"${45:#4C4C4C}\"),",
+            "    TooltipText = Color3.fromHex(\"${46:#FFFFFF}\"),",
+            "    TooltipSecondary = Color3.fromHex(\"${47:#0091FF}\"),",
+            "    TooltipSecondaryText = Color3.fromHex(\"${48:#FFFFFF}\"),",
+            "",
+            "    SectionExpandIcon = Color3.fromHex(\"${49:#FFFFFF}\"),",
+            "    SectionExpandIconTransparency = ${50:0.4},",
+            "    SectionBox = Color3.fromHex(\"${51:#FFFFFF}\"),",
+            "    SectionBoxTransparency = ${52:0.95},",
+            "    SectionBoxBorder = Color3.fromHex(\"${53:#FFFFFF}\"),",
+            "    SectionBoxBorderTransparency = ${54:0.75},",
+            "",
+            "    SearchBarBorder = Color3.fromHex(\"${55:#FFFFFF}\"),",
+            "    SearchBarBorderTransparency = ${56:0.75},",
+            "",
+            "    Notification = Color3.fromHex(\"${57:#101010}\"),",
+            "    NotificationTitle = Color3.fromHex(\"${58:#FFFFFF}\"),",
+            "    NotificationTitleTransparency = ${59:0},",
+            "    NotificationContent = Color3.fromHex(\"${60:#FFFFFF}\"),",
+            "    NotificationContentTransparency = ${61:0.4},",
+            "",
+            "    $0",
+            "})"
+        ],
+        "description": "Tema completo do WindUI (full config)"
+    },
+    "WindUI Section": {
+        "scope": "lua",
+        "prefix": ":section",
+        "body": [
+            "local Section = Tab:Section({",
+            "    Title = \"${1:General Settings}\",",
+            "    Desc = \"${2:Section description}\",",
+            "    Icon = \"${3:settings}\",",
+            "    IconColor = Color3.fromRGB(${4:100}, ${5:100}, ${6:255}),",
+            "    TextSize = ${7:19},",
+            "    TextXAlignment = \"${8:Left}\",",
+            "    Box = ${9:false},",
+            "    BoxBorder = ${10:false},",
+            "    Opened = ${11:true},",
+            "    FontWeight = ${12:Enum.FontWeight.SemiBold},",
+            "    DescFontWeight = ${13:Enum.FontWeight.Medium},",
+            "    TextTransparency = ${14:0.05},",
+            "    DescTextTransparency = ${15:0.4},",
+            "    $0",
+            "})"
+        ],
+        "description": "Cria uma section no WindUI"
+    },
+    "WindUI Button": {
+        "scope": "lua",
+        "prefix": ":buttn",
+        "body": [
+            "local Button = Tab:Button({",
+            "    Title = \"${1:Click Me}\",",
+            "    Desc = \"${2:Button description}\",",
+            "    Icon = \"${3:mouse-pointer-click}\",",
+            "    IconAlign = \"${4:Right}\",",
+            "    Color = Color3.fromRGB(${5:100}, ${6:100}, ${7:255}),",
+            "    Locked = ${8:false},",
+            "    LockedTitle = \"${9:Locked}\",",
+            "    Justify = \"${10:Between}\",",
+            "    Flag = \"${11:my_button}\",",
+            "    Callback = function()",
+            "        ${0:print(\"Clicked!\")}",
+            "    end",
+            "})"
+        ],
+        "description": "Cria um botão no WindUI"
+    },
+    "WindUI Toggle": {
+        "scope": "lua",
+        "prefix": ":toggle",
+        "body": [
+            "local Toggle = Tab:Toggle({",
+            "    Title = \"${1:Enable Feature}\",",
+            "    Desc = \"${2:Toggle description}\",",
+            "    Icon = \"${3:power}\",",
+            "    Value = ${4:false},",
+            "    Type = \"${5:Toggle}\",",
+            "    Color = Color3.fromRGB(${6:100}, ${7:200}, ${8:100}),",
+            "    Locked = ${9:false},",
+            "    Flag = \"${10:my_toggle}\",",
+            "    Callback = function(state)",
+            "        ${0:print(\"State changed:\", state)}",
+            "    end",
+            "})"
+        ],
+        "description": "Cria um toggle no WindUI"
+    },
+    "WindUI Input": {
+        "scope": "lua",
+        "prefix": ":input",
+        "body": [
+            "local Input = Tab:Input({",
+            "    Title = \"${1:Username}\",",
+            "    Desc = \"${2:Enter your username}\",",
+            "    Icon = \"${3:user}\",",
+            "    Type = \"${4:Default}\",",
+            "    Placeholder = \"${5:Type here...}\",",
+            "    Value = \"${6}\",",
+            "    Locked = ${7:false},",
+            "    Flag = \"${8:my_input}\",",
+            "    Callback = function(text)",
+            "        ${0:print(\"Text entered:\", text)}",
+            "    end",
+            "})"
+        ],
+        "description": "Cria um input no WindUI"
+    },
+    "WindUI Dropdown": {
+        "scope": "lua",
+        "prefix": ":dropdown",
+        "body": [
+            "local Dropdown = Tab:Dropdown({",
+            "    Title = \"${1:Select Value}\",",
+            "    Values = {",
+            "        \"${2:Option 1}\",",
+            "        \"${3:Option 2}\",",
+            "        \"${4:Option 3}\"",
+            "    },",
+            "    Callback = function(selected)",
+            "        ${0:print(\"Selected:\", selected)}",
+            "    end",
+            "})"
+        ],
+        "description": "Cria um dropdown no WindUI"
+    },
+    "WindUI Keybind": {
+        "scope": "lua",
+        "prefix": ":keybind",
+        "body": [
+            "local Keybind = Tab:Keybind({",
+            "    Title = \"${1:Toggle UI}\",",
+            "    Desc = \"${2:Press this key to toggle the UI}\",",
+            "    Value = \"${3:V}\",",
+            "    Locked = ${4:false},",
+            "    Flag = \"${5:toggle_ui_key}\",",
+            "    Callback = function(key)",
+            "        ${0:print(\"Keybind activated:\", key)}",
+            "    end",
+            "})"
+        ],
+        "description": "Cria um keybind no WindUI"
+    },
+    "WindUI Code": {
+        "scope": "lua",
+        "prefix": ":codeblock",
+        "body": [
+            "Tab:Code({",
+            "    Title = \"${1:Example Code}\",",
+            "    Code = \"${2:local x = 10\\\\nprint(x)}\",",
+            "    OnCopy = function()",
+            "        ${0:print(\"Code copied\")}",
+            "    end",
+            "})"
+        ],
+        "description": "Bloco de código no WindUI"
+    },
+    "WindUI Space": {
+        "scope": "lua",
+        "prefix": ":space",
+        "body": [
+            "Tab:Space({ Columns = ${1:1} })$0"
+        ],
+        "description": "Espaçamento no WindUI"
+    },
+    "WindUI Notify": {
+        "prefix": ":notify",
+        "body": [
+            "WindUI:Notify({",
+            "\tTitle = \"${1:Success}\",",
+            "\tContent = \"${2:Operation completed successfully}\",",
+            "\tDuration = ${3:3}",
+            "})"
+        ],
+        "description": "WindUI notification snippet"
+    }
+}
