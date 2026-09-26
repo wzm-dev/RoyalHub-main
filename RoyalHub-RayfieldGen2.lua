@@ -2278,6 +2278,62 @@ TabUtility:CreateSlider({
     callback = function(value) G.setAutoClickerCPS(value) end,
 })
 
+-- Audio Player custom (qualquer ID de som)
+TabUtility:CreateSection({ name = "Audio Player" })
+
+local _customAudioId = ""
+TabUtility:CreateInput({
+    name = "ID do Som",
+    placeholder = "ex: 142376088 (só números)",
+    flag = "CustomAudioId",
+    callback = function(text) _customAudioId = text or "" end,
+})
+
+TabUtility:CreateButton({
+    name = "Tocar ID",
+    description = "Toca o ID digitado (local).",
+    callback = function()
+        if _customAudioId ~= "" then
+            G.playCustomAudio(_customAudioId)
+        else
+            Window:Notify({ title = "Audio", content = "Digite um ID primeiro!", duration = 3 })
+        end
+    end,
+})
+
+TabUtility:CreateButton({
+    name = "Parar Som",
+    callback = function() G.stopTrollAudio() end,
+})
+
+TabUtility:CreateSection({ name = "Rede" })
+
+TabUtility:CreateToggle({
+    name = "Auto Reconnect",
+    description = "Servidor caiu/crashou? Reentra sozinho no mesmo jogo.",
+    flag = "AutoReconnect",
+    callback = function(state) G.toggleAutoReconnect(state) end,
+})
+
+TabUtility:CreateSection({ name = "Pânico" })
+
+TabUtility:CreateButton({
+    name = "🚨 PANIC — Desativar Tudo",
+    description = "Para 100% das funções na hora (sem ejetar o hub).",
+    callback = function()
+        Window:Popup({
+            title = "Pânico",
+            content = "Desligar TODAS as funções agora?",
+            options = {
+                { text = "Cancelar" },
+                { text = "DESLIGAR TUDO", style = "danger", callback = function()
+                    G.panic()
+                end },
+            },
+        })
+    end,
+})
+
 local remoteConsole = TabUtility:CreateConsole({
     name = "Remote Logs",
     height = 160,
@@ -2413,6 +2469,36 @@ TabExploits:CreateButton({
 
 TabExploits:CreateSection({ name = "Fling" })
 
+-- Head Size
+TabExploits:CreateSlider({
+    name = "Head Size",
+    description = "Tamanho da sua cabeça (default 1).",
+    range = { 0.1, 10 },
+    increment = 0.1,
+    value = 1,
+    flag = "HeadSize",
+    callback = function(value) G.setHeadSize(value) end,
+})
+
+TabExploits:CreateButton({
+    name = "Reset Head Size",
+    callback = function() G.setHeadSize(1) end,
+})
+
+-- Bring Player
+TabExploits:CreateButton({
+    name = "Bring Player",
+    description = "Traz o jogador selecionado até você (combo com fling).",
+    callback = function()
+        local alvo = FlingTargetPlayer or (TPSelTarget and Players:FindFirstChild(TPSelTarget))
+        if alvo then
+            G.bringPlayer(alvo.Name)
+        else
+            Window:Notify({ title = "Bring", content = "Selecione um alvo primeiro!", duration = 3 })
+        end
+    end,
+})
+
 local DropFlingTarget = TabExploits:CreateDropdown({
     name = "Selecione Jogador (Fling)",
     options = getPlayerNames(),
@@ -2423,7 +2509,6 @@ local DropFlingTarget = TabExploits:CreateDropdown({
         FlingTargetPlayer = Players:FindFirstChild(option)
     end,
 })
-DropFlingTarget:Lock("Em Manutenção")
 
 local SliderFlingPower = TabExploits:CreateSlider({
     name = "Fling Power",
@@ -2431,7 +2516,6 @@ local SliderFlingPower = TabExploits:CreateSlider({
     flag = "FlingPower",
     callback = function(value) FlingPower = value end,
 })
-SliderFlingPower:Lock("Em manutenção.")
 
 local ToggleLoopFling = TabExploits:CreateToggle({
     name = "Loop Fling",
@@ -2455,21 +2539,20 @@ local ToggleLoopFling = TabExploits:CreateToggle({
         end
     end,
 })
-ToggleLoopFling:Lock("Em Manutenção")
 
 local BtnFlingPlayer = TabExploits:CreateButton({
     name = "Fling Player",
-    description = "Faz o jogador selecionado voar pelo mapa.",
+    description = "Arremessa o jogador selecionado (1 clique).",
     callback = function()
-        if FlingTargetPlayer then
-            G.flingPlayer(FlingTargetPlayer, FlingPower)
-            Window:Notify({ title = "Fling", content = "Arremessado: " .. FlingTargetPlayer.Name, duration = 3 })
+        local alvo = FlingTargetPlayer or (TPSelTarget and Players:FindFirstChild(TPSelTarget))
+        if alvo then
+            G.flingPlayer(alvo, FlingPower)
+            Window:Notify({ title = "Fling", content = "Arremessado: " .. alvo.Name, duration = 3 })
         else
-            Window:Notify({ title = "Erro", content = "Selecione um alvo primeiro!", duration = 3 })
+            Window:Notify({ title = "Fling", content = "Selecione um alvo (dropdown acima ou tab Teleporte)!", duration = 3 })
         end
     end,
 })
-BtnFlingPlayer:Lock("Em manutenção.")
 
 local ToggleSpyChat = TabExploits:CreateToggle({
     name = "SpyChat",
@@ -2945,6 +3028,85 @@ if IS_DEV then
     TabDev:CreateText({
         name = "Modo DEV ativo",
         text = "Olá, " .. (getDevName() or "dev") .. ". Você tem acesso a funções de desenvolvimento do Royal Hub.",
+    })
+
+    TabDev:CreateSection({ name = "Admin Tag (ESP Info)" })
+
+    TabDev:CreateToggle({
+        name = "Mostrar [ADMIN] no ESP",
+        description = "Players staff ganham tag [ADMIN] no ESP Info.",
+        value = true,
+        flag = "AdminTagEnabled",
+        callback = function(state) G.setAdminTagEnabled(state) end,
+    })
+
+    local AdminColorPicker = TabDev:CreateColorPicker({
+        name = "Cor da Tag Admin",
+        color = Color3.fromRGB(255, 40, 40),
+        flag = "AdminTagColor",
+        callback = function(color) G.setAdminTagColor(color) end,
+    })
+
+    TabDev:CreateToggle({
+        name = "Tag RGB Animada",
+        description = "Tag de admin ciclando as cores (estilo RGB themes).",
+        value = false,
+        flag = "AdminTagRGB",
+        callback = function(state)
+            G.setAdminTagRGB(state)
+        end,
+    })
+
+    TabDev:CreateSection({ name = "Lista de Staff" })
+
+    TabDev:CreateText({
+        name = "Detecção automática",
+        text = "Detecta staff por team (Staff/Admin/Mod/Owner/Dev), pelo rank no grupo do criador (200+), e pela lista manual abaixo.",
+    })
+
+    local _staffNameInput = ""
+    TabDev:CreateInput({
+        name = "Adicionar Staff (username)",
+        placeholder = "ex: DarkLord123",
+        flag = "StaffNameInput",
+        callback = function(text) _staffNameInput = text or "" end,
+    })
+
+    local StaffListDropdown = nil -- (forward: botão Adicionar usa Refresh antes da definição)
+
+    TabDev:CreateButton({
+        name = "Adicionar à Lista",
+        callback = function()
+            if _staffNameInput ~= "" then
+                G.addStaff(_staffNameInput)
+                StaffListDropdown:Refresh(G.getStaffNames())
+                Window:Notify({ title = "Staff", content = _staffNameInput .. " marcado como staff!", duration = 3 })
+            end
+        end,
+    })
+
+    local staffSel = nil
+    StaffListDropdown = TabDev:CreateDropdown({
+        name = "Staff Marcados",
+        options = G.getStaffNames(),
+        placeholder = "Selecione...",
+        flag = "StaffSel",
+        callback = function(option)
+            if not option or option == "" then return end
+            staffSel = option
+        end,
+    })
+
+    TabDev:CreateButton({
+        name = "Remover da Lista",
+        callback = function()
+            if staffSel then
+                G.removeStaff(staffSel)
+                staffSel = nil
+                StaffListDropdown:Refresh(G.getStaffNames())
+                Window:Notify({ title = "Staff", content = "Removido!", duration = 3 })
+            end
+        end,
     })
 
     TabDev:CreateSection({ name = "Ferramentas de Dev" })

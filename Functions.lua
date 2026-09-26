@@ -2016,8 +2016,15 @@ local function _esp2dStart()
                             })
                             if nameTxt then
                                 nameTxt.Visible = true
-                                nameTxt.Text    = (p.DisplayName ~= "" and p.DisplayName or p.Name)
-                                nameTxt.Color   = G.EspInfoColor or Color3.new(1, 1, 1)
+                                -- tag de admin: "Nome [ADMIN]" com cor própria (ou RGB)
+                                local adminTag, adminColor = G.getAdminTag(p)
+                                if adminTag then
+                                    nameTxt.Text  = (p.DisplayName ~= "" and p.DisplayName or p.Name) .. adminTag
+                                    nameTxt.Color = adminColor
+                                else
+                                    nameTxt.Text  = (p.DisplayName ~= "" and p.DisplayName or p.Name)
+                                    nameTxt.Color = G.EspInfoColor or Color3.new(1, 1, 1)
+                                end
                                 nameTxt.Position = Vector2.new(cx, minY - 24)  -- POR ÚLTIMO
                             end
                             local distTxt = _esp2dObj(p, "distTxt", "Text", {
@@ -2835,7 +2842,15 @@ function G.toggleAimLockIndicator(enabled)
             local root = t.Character:FindFirstChild("HumanoidRootPart")
             if hum and root and hum.Health > 0 then
                 local dist = math.floor((workspace.CurrentCamera.CFrame.Position - root.Position).Magnitude)
-                txt.Text = "🎯 " .. t.Name .. " (" .. dist .. "m)"
+                local adminTag = G.getAdminTag(t)
+                txt.Text = "🎯 " .. t.Name .. (adminTag or "") .. " (" .. dist .. "m)"
+                if adminTag and G.AdminTagRGB then
+                    txt.Color = Color3.fromHSV(G._AdminTagHue, 1, 1)  -- sincronizado com o hue global
+                elseif adminTag then
+                    txt.Color = G.AdminTagColor
+                else
+                    txt.Color = Color3.fromRGB(255, 80, 80)
+                end
                 txt.Visible = true
                 return
             end
@@ -2912,6 +2927,152 @@ function G.setChatSpamMessage(msg) G.ChatSpamMessage = msg end
 function G.setChatSpamDelay(v) G.ChatSpamDelay = math.max(v, 0.4) end
 
 ------------------------------------------------------------------------
+-- ANTI-STAFF (detecção: team suspeita, lista manual, grupo com rank)
+------------------------------------------------------------------------
+G.StaffList       = {}   -- usernames manuais (lowercase) -> display
+G.StaffTeamNames  = { ["staff"]=true, ["admin"]=true, ["mod"]=true, ["moderator"]=true,
+                      ["owner"]=true, ["dev"]=true, ["developer"]=true, ["moderador"]=true }
+G.StaffMinGroupRank = 200  -- rank mínimo no grupo pra contar como staff
+G.StaffDetected   = {}   -- [player] = true (cache)
+
+function G.isStaff(p)
+    if not p then return false end
+    if G.StaffDetected[p] ~= nil then return G.StaffDetected[p] end
+    -- 1) lista manual
+    if G.StaffList[string.lower(p.Name)] then
+        G.StaffDetected[p] = true
+        return true
+    end
+    -- 2) team suspeita
+    local team = p.Team
+    if team and G.StaffTeamNames[string.lower(team.Name)] then
+        G.StaffDetected[p] = true
+        return true
+    end
+    -- 3) grupo (async: checa 1x, cacheia)
+    task.spawn(function()
+        local ok, rank = pcall(function()
+            if p.GetRankInGroup then
+                return p:GetRankInGroup(game.CreatorId)
+            end
+            return 0
+        end)
+        if ok and rank and rank >= G.StaffMinGroupRank then
+            G.StaffDetected[p] = true
+            if G.JoinLeaveLogEnabled then
+                notify("⚠️ STAFF", p.Name .. " é staff (grupo rank " .. rank .. ")!", 5)
+            end
+        else
+            if G.StaffDetected[p] == nil then G.StaffDetected[p] = false end
+        end
+    end)
+    -- resposta sincrona otimista (os outros 2 checks)
+    return G.StaffDetected[p] == true
+end
+
+function G.addStaff(name)
+    if name and name ~= "" then
+        G.StaffList[string.lower(name)] = name
+        G.StaffDetected = {}
+    end
+end
+
+function G.removeStaff(name)
+    if name then
+        G.StaffList[string.lower(name)] = nil
+        G.StaffDetected = {}
+    end
+end
+
+function G.getStaffNames()
+    local names = {}
+    for _, display in pairs(G.StaffList) do table.insert(names, display) end
+    table.sort(names)
+    return names
+end
+
+------------------------------------------------------------------------
+-- ESP INFO: tag de admin (cor fixa ou RGB animado)
+------------------------------------------------------------------------
+G.AdminTagEnabled   = true
+G.AdminTagColor     = Color3.fromRGB(255, 40, 40)   -- vermelho default
+G.AdminTagRGB       = false                          -- RGB animado
+G._AdminTagHue      = 0
+
+function G.setAdminTagColor(c)     G.AdminTagColor = c end
+function G.setAdminTagRGB(on)      G.AdminTagRGB = on and true or false end
+function G.setAdminTagEnabled(on)  G.AdminTagEnabled = on and true or false end
+
+-- chamado pelo loop do ESP Info pra cada player: retorna texto extra e cor
+function G.getAdminTag(p)
+    if not G.AdminTagEnabled then return nil, nil end
+    if not G.isStaff(p) then return nil, nil end
+    local color = G.AdminTagColor
+    if G.AdminTagRGB then
+        -- RGB animado: hue gira ~0.25 ciclos/s (mesma vibe dos RGB themes)
+        G._AdminTagHue = (G._AdminTagHue + 0.004) % 1
+        color = Color3.fromHSV(G._AdminTagHue, 1, 1)
+    end
+    return " [ADMIN]", color
+end
+
+------------------------------------------------------------------------
+-- AUDIO PLAYER CUSTOM (qualquer ID de som, local)
+------------------------------------------------------------------------
+G.CustomAudioId = nil
+
+function G.playCustomAudio(idText, volume)
+    local id = tonumber(idText)
+    if not id then
+        notify("Audio", "ID inválido — use só números (ex: 142376088).", 3)
+        return
+    end
+    G.stopTrollAudio()
+    local s = Instance.new("Sound")
+    s.SoundId = "rbxassetid://" .. id
+    s.Volume = volume or G.TrollVolume or 5
+    s.Parent = game:GetService("SoundService")
+    s:Play()
+    G.TrollAudioPlaying = s
+    s.Ended:Connect(function()
+        pcall(function() s:Destroy() end)
+        if G.TrollAudioPlaying == s then G.TrollAudioPlaying = nil end
+    end)
+    notify("Audio", "Tocando ID " .. id, 2)
+end
+
+------------------------------------------------------------------------
+-- AUTO RECONNECT (desconectou/crashou -> rejoin no mesmo server)
+------------------------------------------------------------------------
+G.AutoReconnectEnabled = false
+G._AutoReconnectConn = nil
+
+function G.toggleAutoReconnect(enabled)
+    G.AutoReconnectEnabled = enabled
+    if G._AutoReconnectConn then G._AutoReconnectConn:Disconnect() G._AutoReconnectConn = nil end
+    if not enabled then return end
+    -- catch no erro de conexão: quando o client perde o server, entra aqui
+    G._AutoReconnectConn = LP.OnTeleport:Connect(function(teleportState, placeId, _, errMsg)
+        if not G.AutoReconnectEnabled then return end
+        -- Failed/Erro de rede no teleport pra um jogo (não kick manual)
+        if teleportState == Enum.TeleportState.Failed then
+            task.wait(2)
+            pcall(function()
+                game:GetService("TeleportService"):Teleport(placeId, LP)
+            end)
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- PANIC BUTTON (para 100% das funções com 1 clique, sem eject)
+------------------------------------------------------------------------
+function G.panic()
+    G.unloadAll()
+    notify("PANIC", "Todas as funções desligadas.", 3)
+end
+
+------------------------------------------------------------------------
 -- UNLOAD ALL — usado ao ejetar o script: desliga tudo e reverte
 ------------------------------------------------------------------------
 function G.unloadAll()
@@ -2971,6 +3132,7 @@ function G.unloadAll()
     pcall(function() G.toggleAimLockIndicator(false) end)
     pcall(function() G.toggleJoinLeaveLog(false) end)
     pcall(function() G.toggleChatSpam(false) end)
+    pcall(function() G.toggleAutoReconnect(false) end)
     pcall(function() G.toggleSpyChat(false) end)
     pcall(function() G.stopTrollAudio() end)
     pcall(function() G.toggleMapInvisible(false) end)
