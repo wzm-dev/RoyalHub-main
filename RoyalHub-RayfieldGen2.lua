@@ -580,6 +580,14 @@ local Window = Rayfield:CreateWindow({
             ["Teleportado para "] = "Teleported to ",
             ["O modo anonymous (esconder nome e avatar) agora fica na aba Settings nativa do Rayfield: opção \"Show profile\". Lá também ficam a tecla de abrir/fechar o menu (Toggle Keybind) e as configurações salvas (Configurations)."] = "The anonymous mode (hiding name and avatar) now lives in Rayfield's native Settings tab: the \"Show profile\" option. The menu toggle key (Toggle Keybind) and saved configurations (Configurations) are there too.",
             ["Royal Hub"] = "Royal Hub",
+            ["ESP Box"] = "ESP Box",
+            ["Caixa de cantos ao redor do jogador (estilo corner box)."] = "Corner box around the player.",
+            ["Barra de vida à esquerda do box (verde -> amarelo -> vermelho)."] = "Health bar left of the box (green -> yellow -> red).",
+            ["Nome acima e distância embaixo do jogador."] = "Name above, distance below the player.",
+            ["Box Cor"] = "Box Color",
+            ["Info Cor (Nome)"] = "Info Color (Name)",
+            ["ESP Health Bar"] = "ESP Health Bar",
+            ["ESP Info"] = "ESP Info",
         },
         -- Español
         ["es"] = {
@@ -630,14 +638,14 @@ local Window = Rayfield:CreateWindow({
             ["Discord WebHook"] = "WebHook de Discord", ["Distância Fake TP"] = "Distancia del Fake TP",
             ["Distância do Auto Parry"] = "Distancia del Auto Parry", ["Distância máxima (studs) para ativar o parry."] = "Max distance (studs) to trigger parry.",
             ["ESP"] = "ESP", ["ESP (E)"] = "ESP (E)",
-            ["ESP com health bar, box e nome — powered by Twilight."] = "ESP with health bar, box and name — powered by Twilight.", ["ESP — Hitbox Visual"] = "ESP — Hitbox Visual",
+            ["ESP — Hitbox Visual"] = "ESP — Hitbox Visual",
             ["ESP — Linhas"] = "ESP — Lines", ["Ejetar"] = "Eyectar",
             ["Ejetar script"] = "Eyectar script", ["Em breve - customização de fonte e textos."] = "Pronto — personalización de fuente y textos.",
             ["Em studs. Padrão = 4."] = "In studs. Default = 4.", ["Emote"] = "Emote",
             ["Emotes disponíveis (mesmo sem ter na conta)."] = "Available emotes (even if you don't own them).", ["Entra em outro servidor da partida atual."] = "Joins another server of the current game.",
             ["Envia uma mensagem de teste."] = "Sends a test message.", ["Envia webhook quando pegar um item novo."] = "Sends a webhook when you pick up a new item.",
             ["Erro"] = "Error", ["Escaneia o jogo em busca de backdoors conhecidos."] = "Scans the game for known backdoors.",
-            ["Esp 2.0 (Twilight)"] = "ESP 2.0 (Twilight)", ["Espaço entre o centro e as linhas."] = "Gap between center and lines.",
+            ["Espaço entre o centro e as linhas."] = "Gap between center and lines.",
             ["Espessura da linha do círculo."] = "Circle line thickness.", ["Espiona TODOS chats privados/DMs."] = "Spies on ALL private chats/DMs.",
             ["Este é o link do nosso Discord, entre para ficar por dentro das novidades e atualizações do Royal Hub!"] = "This is our Discord link — join to stay on top of Royal Hub news and updates!", ["Executa o emote selecionado."] = "Plays the selected emote.",
             ["Expande a hitbox dos jogadores para facilitar acertos."] = "Expands player hitboxes for easier hits.", ["Exploits"] = "Exploits",
@@ -743,6 +751,14 @@ local Window = Rayfield:CreateWindow({
             ["Teleportado para "] = "Teletransportado a ",
             ["O modo anonymous (esconder nome e avatar) agora fica na aba Settings nativa do Rayfield: opção \"Show profile\". Lá também ficam a tecla de abrir/fechar o menu (Toggle Keybind) e as configurações salvas (Configurations)."] = "El modo anónimo (ocultar nombre y avatar) ahora está en la pestaña nativa de Settings de Rayfield: la opción \"Show profile\". Allí también están la tecla del menú (Toggle Keybind) y las configuraciones guardadas (Configurations).",
             ["Royal Hub"] = "Royal Hub",
+            ["ESP Box"] = "ESP Box",
+            ["Caixa de cantos ao redor do jogador (estilo corner box)."] = "Caja de esquinas alrededor del jugador.",
+            ["Barra de vida à esquerda do box (verde -> amarelo -> vermelho)."] = "Barra de vida a la izquierda (verde -> amarillo -> rojo).",
+            ["Nome acima e distância embaixo do jogador."] = "Nombre arriba, distancia abajo.",
+            ["Box Cor"] = "Box Color",
+            ["Info Cor (Nome)"] = "Info Color (Nombre)",
+            ["ESP Health Bar"] = "ESP Health Bar",
+            ["ESP Info"] = "ESP Info",
         },
     },
 })
@@ -751,8 +767,8 @@ local Window = Rayfield:CreateWindow({
 -- DEV CHECK: tab exclusiva quando um dev entra (username OU UserId)
 local DEV_IDS = {
     ["dark_ziinn"]       = "DARK_ZIINN",
-    ["s1wlkrx"]          = "S1wlkrX",
-    ["thenoctisblack78"] = "thenNoctisblack78",
+    ["s1wlkrx"]          = "Beakoo",
+    ["thenoctisblack78"] = "Stelle",
 }
 local function getDevName()
     local lname = string.lower(LP.Name or "")
@@ -1151,19 +1167,43 @@ local ToggleESP = TabVisual:CreateToggle({
     flag = "ESP",
     callback = function(state) G.toggleESP(state) end,
 })
-
-local ToggleESP2 = TabVisual:CreateToggle({
-    name = "Esp 2.0 (Twilight)",
-    description = "ESP com health bar, box e nome — powered by Twilight.",
-    flag = "ESP2",
-    callback = function(state)
-        if state and G.EspEnabled then
-            G.toggleESP(false)
-            ToggleESP:Set(false, true)
-        end
-    end,
+-- ESP 2D (o que o Twilight prometia — nativo, separado)
+TabVisual:CreateToggle({
+    name = "ESP Box",
+    description = "Caixa de cantos ao redor do jogador (estilo corner box).",
+    flag = "EspBox",
+    callback = function(state) G.toggleEspBox(state) end,
 })
-ToggleESP2:Lock("Em desenvolvimento.")
+
+TabVisual:CreateColorPicker({
+    name = "Box Cor",
+    color = Color3.fromRGB(255, 255, 255),
+    flag = "EspBoxColor",
+    callback = function(color) G.setEspBoxColor(color) end,
+})
+
+TabVisual:CreateToggle({
+    name = "ESP Health Bar",
+    description = "Barra de vida à esquerda do box (verde -> amarelo -> vermelho).",
+    flag = "EspHealth",
+    callback = function(state) G.toggleEspHealth(state) end,
+})
+
+TabVisual:CreateToggle({
+    name = "ESP Info",
+    description = "Nome acima e distância embaixo do jogador.",
+    flag = "EspInfo",
+    callback = function(state) G.toggleEspInfo(state) end,
+})
+
+TabVisual:CreateColorPicker({
+    name = "Info Cor (Nome)",
+    color = Color3.fromRGB(255, 255, 255),
+    flag = "EspInfoColor",
+    callback = function(color) G.setEspInfoColor(color) end,
+})
+
+
 
 TabVisual:CreateToggle({
     name = "ESP — Linhas",

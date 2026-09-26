@@ -1670,6 +1670,227 @@ function G.setEspBonesColor(c)  G.EspBonesColor = c end
 function G.setEspBonesWidth(v)  G.EspBonesWidth = v end
 
 ------------------------------------------------------------------------
+-- ESP 2D (o que o "Twilight" prometia, nativo: Box / Health Bar / Info)
+-- 1 objeto por jogador por recurso, cacheado — mesmo padrão dos bones
+------------------------------------------------------------------------
+G.EspBoxEnabled    = false
+G.EspHealthEnabled = false
+G.EspInfoEnabled   = false
+G._Esp2dConn       = nil
+G._Esp2dByPlayer   = {}   -- [player] = { box1..8, hpBg, hpFill, nameTxt, distTxt }
+
+local function _esp2dObj(p, key, class)
+    local data = G._Esp2dByPlayer[p]
+    if not data then
+        data = {}
+        G._Esp2dByPlayer[p] = data
+    end
+    if data[key] then return data[key] end
+    local ok, o = pcall(Drawing.new, class)
+    if not ok then return nil end
+    data[key] = o
+    return o
+end
+
+local function _esp2dRemove(p)
+    local data = G._Esp2dByPlayer[p]
+    if data then
+        for _, o in pairs(data) do pcall(function() o:Remove() end) end
+        G._Esp2dByPlayer[p] = nil
+    end
+end
+
+local function _esp2dHideKeys(p, keys)
+    local data = G._Esp2dByPlayer[p]
+    if not data then return end
+    for _, k in ipairs(keys) do
+        if data[k] then data[k].Visible = false end
+    end
+end
+
+local function _esp2dHealthColor(hp)
+    -- hp 0..1: vermelho (vazio) -> amarelo -> verde (cheio)
+    local r, g
+    if hp >= 0.5 then
+        local t = (hp - 0.5) * 2
+        r = math.floor(255 * (1 - t)); g = 255
+    else
+        local t = hp * 2
+        r = 255; g = math.floor(255 * t)
+    end
+    return Color3.fromRGB(r, g, 0)
+end
+
+local BOX_KEYS = { "box1","box2","box3","box4","box5","box6","box7","box8" }
+local INFO_KEYS = { "nameTxt", "distTxt" }
+local HP_KEYS   = { "hpBg", "hpFill" }
+
+local function _esp2dStart()
+    if G._Esp2dConn then return end
+    G._Esp2dConn = S.Run.RenderStepped:Connect(function()
+        local cam = workspace.CurrentCamera
+        local camPos = cam.CFrame.Position
+        local myTeam = LP.Team
+
+        local corners = {
+            Vector3.new(-0.5,-0.5,-0.5), Vector3.new(0.5,-0.5,-0.5),
+            Vector3.new(-0.5, 0.5,-0.5), Vector3.new(0.5, 0.5,-0.5),
+            Vector3.new(-0.5,-0.5, 0.5), Vector3.new(0.5,-0.5, 0.5),
+            Vector3.new(-0.5, 0.5, 0.5), Vector3.new(0.5, 0.5, 0.5),
+        }
+
+        for _, p in ipairs(S.Players:GetPlayers()) do
+            local valid = false
+            if p ~= LP and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 and hum.MaxHealth > 0 then
+                    local isAlly = G.UseTeamCheck and myTeam and (p.Team == myTeam)
+                    if not isAlly then valid = true end
+                end
+            end
+
+            if not valid then
+                _esp2dRemove(p)
+            else
+                local char = p.Character
+                local root = char:FindFirstChild("HumanoidRootPart")
+                local hum  = char:FindFirstChildOfClass("Humanoid")
+                local okBB, cf, size = pcall(function() return char:GetBoundingBox() end)
+                if not okBB or not root or not cf then
+                    _esp2dRemove(p)
+                else
+                    -- projeta os 8 cantos do bounding box 3D pra tela
+                    local minX, minY = math.huge, math.huge
+                    local maxX, maxY = -math.huge, -math.huge
+                    local anyOnScreen = false
+                    for _, half in ipairs(corners) do
+                        local sp, onScreen = cam:WorldToViewportPoint(cf * (size * half))
+                        if onScreen then
+                            anyOnScreen = true
+                            if sp.X < minX then minX = sp.X end
+                            if sp.Y < minY then minY = sp.Y end
+                            if sp.X > maxX then maxX = sp.X end
+                            if sp.Y > maxY then maxY = sp.Y end
+                        end
+                    end
+
+                    if not anyOnScreen or maxX <= minX or maxY <= minY then
+                        _esp2dHideKeys(p, BOX_KEYS)
+                        _esp2dHideKeys(p, HP_KEYS)
+                        _esp2dHideKeys(p, INFO_KEYS)
+                    else
+                        local w = maxX - minX
+                        local h = maxY - minY
+
+                        -- ===== BOX (estilo canto: 4 cantos, 2 linhas cada) =====
+                        if G.EspBoxEnabled then
+                            local cl = math.min(w, h) * 0.25
+                            local segs = {
+                                { "box1", minX, minY, minX + cl, minY }, { "box2", minX, minY, minX, minY + cl },
+                                { "box3", maxX, minY, maxX - cl, minY }, { "box4", maxX, minY, maxX, minY + cl },
+                                { "box5", minX, maxY, minX + cl, maxY }, { "box6", minX, maxY, minX, maxY - cl },
+                                { "box7", maxX, maxY, maxX - cl, maxY }, { "box8", maxX, maxY, maxX, maxY - cl },
+                            }
+                            for _, seg in ipairs(segs) do
+                                local line = _esp2dObj(p, seg[1], "Line")
+                                if line then
+                                    line.Visible   = true
+                                    line.From      = Vector2.new(seg[2], seg[3])
+                                    line.To        = Vector2.new(seg[4], seg[5])
+                                    line.Color     = G.EspBoxColor or Color3.new(1, 1, 1)
+                                    line.Thickness = 1
+                                end
+                            end
+                        else
+                            _esp2dHideKeys(p, BOX_KEYS)
+                        end
+
+                        -- ===== HEALTH BAR (esquerda do box) =====
+                        if G.EspHealthEnabled then
+                            local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                            local bx = minX - 6
+                            local hpBg = _esp2dObj(p, "hpBg", "Line")
+                            if hpBg then
+                                hpBg.Visible   = true
+                                hpBg.From      = Vector2.new(bx, minY)
+                                hpBg.To        = Vector2.new(bx, maxY)
+                                hpBg.Color     = Color3.fromRGB(30, 30, 30)
+                                hpBg.Thickness = 3
+                            end
+                            local hpFill = _esp2dObj(p, "hpFill", "Line")
+                            if hpFill then
+                                hpFill.Visible   = true
+                                hpFill.From      = Vector2.new(bx, maxY)
+                                hpFill.To        = Vector2.new(bx, maxY - h * hp)
+                                hpFill.Color     = _esp2dHealthColor(hp)
+                                hpFill.Thickness = 3
+                            end
+                        else
+                            _esp2dHideKeys(p, HP_KEYS)
+                        end
+
+                        -- ===== INFO (nome acima, distância embaixo) =====
+                        if G.EspInfoEnabled then
+                            local nameTxt = _esp2dObj(p, "nameTxt", "Text")
+                            if nameTxt then
+                                nameTxt.Visible   = true
+                                nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
+                                nameTxt.Position  = Vector2.new((minX + maxX) / 2, minY - 20)
+                                nameTxt.Size      = 16
+                                nameTxt.Center    = true
+                                nameTxt.Outline   = true
+                                nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
+                            end
+                            local distTxt = _esp2dObj(p, "distTxt", "Text")
+                            if distTxt then
+                                local dist = math.floor((camPos - root.Position).Magnitude)
+                                distTxt.Visible   = true
+                                distTxt.Text      = dist .. "m"
+                                distTxt.Position  = Vector2.new((minX + maxX) / 2, maxY + 4)
+                                distTxt.Size      = 13
+                                distTxt.Center    = true
+                                distTxt.Outline   = true
+                                distTxt.Color     = Color3.fromRGB(200, 200, 200)
+                            end
+                        else
+                            _esp2dHideKeys(p, INFO_KEYS)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    if not G._Esp2dRemoveConn then
+        G._Esp2dRemoveConn = S.Players.PlayerRemoving:Connect(_esp2dRemove)
+    end
+end
+
+local function _esp2dStopIfIdle()
+    if G.EspBoxEnabled or G.EspHealthEnabled or G.EspInfoEnabled then return end
+    if G._Esp2dConn then G._Esp2dConn:Disconnect(); G._Esp2dConn = nil end
+    for p in pairs(G._Esp2dByPlayer) do _esp2dRemove(p) end
+end
+
+function G.toggleEspBox(enabled)
+    G.EspBoxEnabled = enabled
+    if enabled then _esp2dStart() else _esp2dStopIfIdle() end
+end
+
+function G.toggleEspHealth(enabled)
+    G.EspHealthEnabled = enabled
+    if enabled then _esp2dStart() else _esp2dStopIfIdle() end
+end
+
+function G.toggleEspInfo(enabled)
+    G.EspInfoEnabled = enabled
+    if enabled then _esp2dStart() else _esp2dStopIfIdle() end
+end
+
+function G.setEspBoxColor(c)  G.EspBoxColor = c end
+function G.setEspInfoColor(c) G.EspInfoColor = c end
+
+------------------------------------------------------------------------
 -- CLIQUE ESQUERDO que funciona: VirtualInputManager > mouse1click > keypress
 -- (keypress(1) não funciona pra mouse na maioria dos executores — era o bug)
 local function _clickLeftMouse()
@@ -2308,6 +2529,9 @@ function G.unloadAll()
     pcall(function() G.toggleChams(false) end)
     pcall(function() G.toggleBTools(false) end)
     pcall(function() G.toggleEspBones(false) end)
+    pcall(function() G.toggleEspBox(false) end)
+    pcall(function() G.toggleEspHealth(false) end)
+    pcall(function() G.toggleEspInfo(false) end)
     pcall(function() G.toggleSpyChat(false) end)
     pcall(function() G.stopTrollAudio() end)
     pcall(function() G.toggleMapInvisible(false) end)
