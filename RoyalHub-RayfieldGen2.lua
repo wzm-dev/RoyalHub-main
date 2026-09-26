@@ -380,22 +380,32 @@ task.spawn(function()
 end)
 
 --============================================================================--
---  TABS (ordem idêntica à GUI original)
---  1. Inicio | 2. Personagem | 3. Farm | 4. Loja | 5. TP and WBHK
---  6. Misc | 7. Exploits | 8. Configurações | 9. Info
+--  TABS - organização nova (12 tabs em 4 grupos no rail)
+--  [Combat]      Aimbot & Combat | Visual
+--  [Personagem]  Personagem | Farm | Loja | Teleporte
+--  [Utilidades]  Exploits | Fun | Utilidades
+--  [Hub]         Personalização | Configurações | Info
 --============================================================================--
 
-local TabHome       = Window:CreateTab({ name = "Inicio",       icon = ICON.config })
-local TabPersonagem = Window:CreateTab({ name = "Personagem",   icon = ICON.rayfield })
-local TabFarm       = Window:CreateTab({ name = "Farm",         icon = ICON.rayfield })
-local TabShopping   = Window:CreateTab({ name = "Loja",         icon = ICON.rayfield })
-local TabTeleport   = Window:CreateTab({ name = "TP and WBHK",  icon = ICON.rayfield })
-local TabMisc       = Window:CreateTab({ name = "Misc",         icon = ICON.rayfield })
-local TabExploits   = Window:CreateTab({ name = "Exploits",     icon = ICON.rayfield })
-local TabSettings   = Window:CreateTab({ name = "Configurações", icon = ICON.settings })
-local TabInfo       = Window:CreateTab({ name = "Info",         icon = ICON.rayfield })
+Window:CreateSection({ name = "Combat" })
+local TabHome       = Window:CreateTab({ name = "Aimbot & Combat", icon = ICON.config })
+local TabVisual     = Window:CreateTab({ name = "Visual",           icon = ICON.rayfield })
 
--- A primeira tab abre automaticamente no Gen2 (TabHome == "Inicio")
+Window:CreateSection({ name = "Personagem" })
+local TabPersonagem = Window:CreateTab({ name = "Personagem",       icon = ICON.rayfield })
+local TabFarm       = Window:CreateTab({ name = "Farm",             icon = ICON.rayfield })
+local TabShopping   = Window:CreateTab({ name = "Loja",             icon = ICON.rayfield })
+local TabTeleport   = Window:CreateTab({ name = "Teleporte",        icon = ICON.rayfield })
+
+Window:CreateSection({ name = "Utilidades" })
+local TabExploits   = Window:CreateTab({ name = "Exploits",         icon = ICON.rayfield })
+local TabMisc       = Window:CreateTab({ name = "Fun",             icon = ICON.rayfield })
+local TabUtility    = Window:CreateTab({ name = "Utilidades",      icon = ICON.rayfield })
+
+Window:CreateSection({ name = "Hub" })
+local TabThemes     = Window:CreateTab({ name = "Personalização",   icon = ICON.settings })
+local TabSettings   = Window:CreateTab({ name = "Configurações",    icon = ICON.settings })
+local TabInfo       = Window:CreateTab({ name = "Info",             icon = ICON.rayfield })
 
 --============================================================================--
 --  TAB: INICIO — Seção Aimbot
@@ -676,9 +686,9 @@ TabHome:CreateSlider({
 --  TAB: INICIO — Seção Visual
 --============================================================================--
 
-TabHome:CreateSection({ name = "Visual" })
+TabVisual:CreateSection({ name = "Visual" })
 
-local SpectateDropdown = TabHome:CreateDropdown({
+local SpectateDropdown = TabVisual:CreateDropdown({
     name = "Selecione o Player",
     description = "Seleciona o player para spectate.",
     options = getPlayerNames(),
@@ -689,7 +699,7 @@ local SpectateDropdown = TabHome:CreateDropdown({
     end,
 })
 
-TabHome:CreateToggle({
+TabVisual:CreateToggle({
     name = "Spectate Player",
     description = "Ativa câmera na perspectiva do player selecionado.",
     flag = "Spectate",
@@ -702,7 +712,7 @@ TabHome:CreateToggle({
     end,
 })
 
-TabHome:CreateToggle({
+TabVisual:CreateToggle({
     name = "NoClip",
     description = "Permite atravessar paredes e objetos.",
     flag = "NoClip",
@@ -710,14 +720,14 @@ TabHome:CreateToggle({
 })
 
 -- Crosshair custom
-TabHome:CreateToggle({
+TabVisual:CreateToggle({
     name = "Crosshair",
     description = "Crosshair customizado no centro da tela (Drawing API).",
     flag = "Crosshair",
     callback = function(state) G.toggleCrosshair(state) end,
 })
 
-TabHome:CreateSlider({
+TabVisual:CreateSlider({
     name = "Crosshair Tamanho",
     range = { 2, 20 },
     increment = 1,
@@ -726,7 +736,7 @@ TabHome:CreateSlider({
     callback = function(value) G.setCrosshairSize(value) end,
 })
 
-TabHome:CreateSlider({
+TabVisual:CreateSlider({
     name = "Crosshair Gap",
     description = "Espaço entre o centro e as linhas.",
     range = { 0, 15 },
@@ -736,7 +746,7 @@ TabHome:CreateSlider({
     callback = function(value) G.setCrosshairGap(value) end,
 })
 
-TabHome:CreateColorPicker({
+TabVisual:CreateColorPicker({
     name = "Crosshair Cor",
     color = Color3.fromRGB(255, 255, 255),
     flag = "CrosshairColor",
@@ -744,14 +754,14 @@ TabHome:CreateColorPicker({
 })
 
 -- Camera FOV (FieldOfView real da câmera)
-TabHome:CreateToggle({
+TabVisual:CreateToggle({
     name = "Camera FOV",
     description = "Altera o campo de visão da câmera.",
     flag = "CamFOVEnabled",
     callback = function(state) G.toggleCamFOV(state) end,
 })
 
-TabHome:CreateSlider({
+TabVisual:CreateSlider({
     name = "Camera FOV Valor",
     description = "70 = padrão do Roblox.",
     range = { 30, 120 },
@@ -1192,40 +1202,6 @@ else
 end
 
 --============================================================================--
---  TAB: TP AND WBHK — WebHook
---============================================================================--
-
-TabTeleport:CreateSection({ name = "Discord WebHook" })
-
-TabTeleport:CreateInput({
-    name = "URL do WebHook",
-    placeholder = "https://discord.com/api/webhooks/...",
-    description = "Cole a URL do seu webhook do Discord.",
-    flag = "WebhookURL",
-    callback = function(value)
-        if value and value:find("discord.com/api/webhooks") then
-            G.WebhookURL = value
-            Window:Notify({ title = "WebHook", content = "URL salva!", duration = 2 })
-        end
-    end,
-})
-
-TabTeleport:CreateButton({
-    name = "Testar WebHook",
-    description = "Envia uma mensagem de teste.",
-    callback = function()
-        G.sendWebhook("🟢 **RoyalHub** — Teste!\nJogador: **" .. LP.Name .. "**")
-    end,
-})
-
-TabTeleport:CreateToggle({
-    name = "Notif de Inventário",
-    description = "Envia webhook quando pegar um item novo.",
-    flag = "InvWebhook",
-    callback = function(state) G.toggleInventoryWebhook(state) end,
-})
-
---============================================================================--
 --  TAB: MISC — Miscellaneous
 --============================================================================--
 
@@ -1402,9 +1378,9 @@ BtnPlayGlobal:Lock("Em manutenção.")
 --  TAB: MISC — Utilidades
 --============================================================================--
 
-TabMisc:CreateSection({ name = "Utilidades" })
+TabUtility:CreateSection({ name = "Utilidades" })
 
-local CopyPlayerDropdown = TabMisc:CreateDropdown({
+local CopyPlayerDropdown = TabUtility:CreateDropdown({
     name = "Copy Player — Selecionar",
     description = "Selecione o jogador para copiar o visual.",
     options = getPlayerNames(),
@@ -1413,13 +1389,13 @@ local CopyPlayerDropdown = TabMisc:CreateDropdown({
     callback = function(option) CopyTargetPlayer = Players:FindFirstChild(option) end,
 })
 
-TabMisc:CreateButton({
+TabUtility:CreateButton({
     name = "Copiar Visual",
     description = "Copia o outfit do jogador selecionado.",
     callback = function() G.copyPlayerLook(CopyTargetPlayer) end,
 })
 
-TabMisc:CreateToggle({
+TabUtility:CreateToggle({
     name = "Anti-Kick",
     description = "Bloqueia tentativas de kick do servidor.",
     flag = "AntiKick",
@@ -1428,7 +1404,7 @@ TabMisc:CreateToggle({
     end,
 })
 
-TabMisc:CreateToggle({
+TabUtility:CreateToggle({
     name = "Remote Spy",
     description = "Loga todos os RemoteEvents disparados no console.",
     flag = "RemoteSpy",
@@ -1446,14 +1422,14 @@ TabMisc:CreateToggle({
 })
 
 -- Auto Clicker
-TabMisc:CreateToggle({
+TabUtility:CreateToggle({
     name = "Auto Clicker",
     description = "Clica automaticamente N vezes por segundo.",
     flag = "AutoClicker",
     callback = function(state) G.toggleAutoClicker(state) end,
 })
 
-TabMisc:CreateSlider({
+TabUtility:CreateSlider({
     name = "Auto Clicker CPS",
     description = "Cliques por segundo.",
     range = { 1, 50 },
@@ -1463,14 +1439,14 @@ TabMisc:CreateSlider({
     callback = function(value) G.setAutoClickerCPS(value) end,
 })
 
-local remoteConsole = TabMisc:CreateConsole({
+local remoteConsole = TabUtility:CreateConsole({
     name = "Remote Logs",
     height = 160,
     follow = true,
     maxLines = 200,
 })
 
-TabMisc:CreateButton({
+TabUtility:CreateButton({
     name = "Copiar Logs",
     description = "Copia todos os remotes capturados para a área de transferência.",
     callback = function()
@@ -1492,7 +1468,7 @@ TabMisc:CreateButton({
     end,
 })
 
-TabMisc:CreateButton({
+TabUtility:CreateButton({
     name = "Limpar Logs",
     callback = function()
         G.RemoteLogs = {}
@@ -1513,6 +1489,40 @@ task.spawn(function()
         task.wait(1)
     end
 end)
+
+--============================================================================--
+--  TAB: TP AND WBHK — WebHook
+--============================================================================--
+
+TabUtility:CreateSection({ name = "Discord WebHook" })
+
+TabUtility:CreateInput({
+    name = "URL do WebHook",
+    placeholder = "https://discord.com/api/webhooks/...",
+    description = "Cole a URL do seu webhook do Discord.",
+    flag = "WebhookURL",
+    callback = function(value)
+        if value and value:find("discord.com/api/webhooks") then
+            G.WebhookURL = value
+            Window:Notify({ title = "WebHook", content = "URL salva!", duration = 2 })
+        end
+    end,
+})
+
+TabUtility:CreateButton({
+    name = "Testar WebHook",
+    description = "Envia uma mensagem de teste.",
+    callback = function()
+        G.sendWebhook("🟢 **RoyalHub** — Teste!\nJogador: **" .. LP.Name .. "**")
+    end,
+})
+
+TabUtility:CreateToggle({
+    name = "Notif de Inventário",
+    description = "Envia webhook quando pegar um item novo.",
+    flag = "InvWebhook",
+    callback = function(state) G.toggleInventoryWebhook(state) end,
+})
 
 --============================================================================--
 --  TAB: EXPLOITS
@@ -1644,6 +1654,32 @@ TabExploits:CreateButton({
 })
 
 --============================================================================--
+--  TAB: PERSONALIZAÇÃO - temas (fontes e mais pra vir)
+--============================================================================--
+
+TabThemes:CreateSection({ name = "Temas" })
+
+TabThemes:CreateDropdown({
+    name = "Tema do Hub",
+    description = "Altera o tema visual do Royal Hub (25 temas).",
+    options = (function()
+        local names = {}
+        for name in pairs(Themes) do table.insert(names, name) end
+        table.sort(names)
+        return names
+    end)(),
+    placeholder = "Selecione...",
+    flag = "tema_selecionado",
+    callback = function(option) Window:ChangeTheme(Themes[option]) end,
+})
+
+TabThemes:CreateText({
+    name = "Fontes",
+    text = "Em breve - customização de fonte e textos.",
+})
+
+
+--============================================================================--
 --  TAB: CONFIGURAÇÕES
 --============================================================================--
 
@@ -1657,48 +1693,6 @@ TabSettings:CreateButton({
     end,
 })
 
-TabSettings:CreateDropdown({
-    name = "Temas",
-    description = "Altera o tema do Royal Hub",
-    options = (function()
-        local names = {}
-        for name in pairs(Themes) do table.insert(names, name) end
-        table.sort(names)
-        return names
-    end)(),
-    placeholder = "Selecione...",
-    flag = "tema_selecionado",
-    callback = function(option) Window:ChangeTheme(Themes[option]) end,
-})
-
-TabSettings:CreateButton({
-    name = "Salvar Config",
-    description = "Salva tema selecionado e etc.",
-    callback = function()
-        Window:Save()
-        NotifySound:Play()
-        Window:Notify({
-            title = "Configuração salva!",
-            content = "Sua configuração foi salva com sucesso!",
-            duration = 3,
-        })
-    end,
-})
-
-TabSettings:CreateButton({
-    name = "Carregar config",
-    description = "Carrega a configuração salva anteriormente.",
-    callback = function()
-        Window:Load()
-        NotifySound:Play()
-        Window:Notify({
-            title = "Configuração carregada!",
-            content = "Sua configuração foi carregada com sucesso!",
-            duration = 3,
-        })
-    end,
-})
-
 TabSettings:CreateButton({
     name = "Backdoor scanner",
     description = "Escaneia o jogo em busca de backdoors conhecidos.",
@@ -1706,7 +1700,6 @@ TabSettings:CreateButton({
         loadstring(game:HttpGet("https://spawnix.github.io/DevTools.rbxm/Loader/index.lua", true))()
     end,
 })
-
 TabSettings:CreateButton({
     name = "Ejetar script",
     description = "Desliga todas as funções, reverte alterações e remove a UI.",
