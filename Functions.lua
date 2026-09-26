@@ -409,15 +409,15 @@ function G.toggleHitboxESP(enabled)
     G.HitboxESPEnabled = enabled
     local function applyToChar(char)
         if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        local existing = hrp:FindFirstChild("RH_HitboxBox")
+        -- Adornee = MODEL: o SelectionBox desenha o bounding box do
+        -- personagem COMPLETO (não só a HRP/chest)
+        local existing = char:FindFirstChild("RH_HitboxBox")
         if enabled and not existing then
             local sel = Instance.new("SelectionBox")
-            sel.Name = "RH_HitboxBox"; sel.Adornee = hrp
+            sel.Name = "RH_HitboxBox"; sel.Adornee = char
             sel.Color3 = Color3.fromRGB(255,60,60); sel.LineThickness = 0.04
             sel.SurfaceTransparency = 0.75; sel.SurfaceColor3 = Color3.fromRGB(255,60,60)
-            sel.Parent = hrp
+            sel.Parent = char
         elseif not enabled and existing then
             existing:Destroy()
         end
@@ -1097,6 +1097,7 @@ local RadarGui = Instance.new("ScreenGui")
 RadarGui.Name = "RoyalHubRadar"; RadarGui.ResetOnSpawn = false
 local ok = pcall(function() RadarGui.Parent = game:GetService("CoreGui") end)
 if not ok then RadarGui.Parent = LP:WaitForChild("PlayerGui") end
+G._RadarGui = RadarGui
 
 local RPXL = 185
 local RF = Instance.new("Frame")
@@ -1616,7 +1617,7 @@ task.spawn(function() task.wait(1); G.checkAndSetRP() end)
 ------------------------------------------------------------------------
 -- CharacterAdded reconexão automática
 ------------------------------------------------------------------------
-LP.CharacterAdded:Connect(function()
+G._ReconnectConn = LP.CharacterAdded:Connect(function()
     task.wait(0.5)
     if G.FlyEnabled     then G.toggleFly(true)     end
     if G.SpinEnabled    then G.toggleSpin(true)     end
@@ -1823,6 +1824,8 @@ function G.toggleCamFOV(enabled)
     G.CamFOVEnabled = enabled
     if G.CamFOVConn then G.CamFOVConn:Disconnect() G.CamFOVConn = nil end
     if enabled then
+        local cam = workspace.CurrentCamera
+        if cam and not G._OrigFieldOfView then G._OrigFieldOfView = cam.FieldOfView end
         G.CamFOVConn = S.Run.RenderStepped:Connect(function()
             local cam = workspace.CurrentCamera
             if cam and cam.FieldOfView ~= G.CamFOVValue then cam.FieldOfView = G.CamFOVValue end
@@ -1830,8 +1833,9 @@ function G.toggleCamFOV(enabled)
         notify("Camera FOV", "FOV: " .. G.CamFOVValue, 2, "solar:camera-bold")
     else
         local cam = workspace.CurrentCamera
-        if cam then cam.FieldOfView = 70 end -- default do Roblox
-        notify("Camera FOV", "Resetado (70).", 2, "x")
+        if cam then cam.FieldOfView = G._OrigFieldOfView or 70 end
+        G._OrigFieldOfView = nil
+        notify("Camera FOV", "Resetado.", 2, "x")
     end
 end
 
@@ -1841,6 +1845,113 @@ function G.setCamFOV(v)
         local cam = workspace.CurrentCamera
         if cam then cam.FieldOfView = v end
     end
+end
+
+------------------------------------------------------------------------
+-- UNLOAD ALL — usado ao ejetar o script: desliga tudo e reverte
+------------------------------------------------------------------------
+function G.unloadAll()
+    -- 1) features com conns de loop (desligar primeiro: param o efeito)
+    G.AimbotEnabled.normal = false; G.AimbotEnabled.rage = false
+    pcall(function() if G.AimbotConns.normal then G.AimbotConns.normal:Disconnect() end end)
+    pcall(function() if G.AimbotConns.rage  then G.AimbotConns.rage:Disconnect()  end end)
+
+    pcall(function() G.toggleESP(false) end)
+    pcall(function() G.toggleEspLines(false) end)
+    pcall(function() G.toggleHitboxESP(false) end)
+    pcall(function() G.toggleHitbox(false) end)          -- restaura hitboxes originais
+    pcall(function() G.toggleSilentAim(false) end)
+    pcall(function() G.toggleHitPred(false) end)
+    pcall(function() G.toggleNoClip(false) end)
+    pcall(function() G.toggleFly(false) end)             -- destrói BV/BG, PlatformStand off
+    pcall(function() G.toggleSpin(false) end)
+    pcall(function() G.toggleFlingSpin(false) end)       -- remove BAV, restaura colisão
+    pcall(function() G.toggleFakeTP(false) end)
+    pcall(function() G.toggleLoopTP(false) end)
+    pcall(function() G.toggleOrbit(false) end)
+    pcall(function() G.toggleAntiRagdoll(false) end)
+    pcall(function() G.toggleAutoParry(false) end)
+    pcall(function() G.toggleGod(false) end)             -- reseta HP
+    pcall(function() G.toggleInvisible(false) end)
+    pcall(function() G.toggleInfJump(false) end)
+    pcall(function() G.toggleAntiAFK(false) end)
+    pcall(function() G.toggleFullbright(false) end)      -- restaura Lighting
+    pcall(function() G.toggleNoFog(false) end)           -- restaura Fog
+    pcall(function() G.toggleXray(false) end)            -- restaura materiais
+    pcall(function() G.toggleFreecam(false) end)         -- câmera volta ao normal
+    pcall(function() G.toggleHoverName(false) end)
+    pcall(function() G.toggleRadar(false) end)
+    pcall(function() G.toggleReach(false) end)
+    pcall(function() G.toggleKillAura(false) end)
+    pcall(function() G.toggleClickTP(false) end)
+    pcall(function() G.stopSpectate() end)
+    pcall(function() G.toggleTriggerBot(false) end)
+    pcall(function() G.toggleAutoClicker(false) end)
+    pcall(function() G.toggleCrosshair(false) end)
+    pcall(function() G.toggleCamFOV(false) end)          -- FOV da câmera volta a 70
+    pcall(function() G.toggleSpeedLock(false) end)
+    pcall(function() G.toggleJumpLock(false) end)
+    pcall(function() G.toggleAutoRespawn(false) end)
+    pcall(function() G.toggleInventoryWebhook(false) end)
+
+    -- 2) estado que não tem toggle off dedicado
+    G.SpinEnabled = false
+    G.FreezeEnabled = false
+    local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if myRoot then myRoot.Anchored = false end
+    G.AntiKickEnabled = false
+    G.RemoteSpyEnabled = false
+    G.TriggerBotEnabled = false; G.AutoClickerEnabled = false
+
+    -- 3) sprites do Drawing API (FOV circle, crosshair, esp lines)
+    pcall(function() if G.FovCircle then G.FovCircle:Remove() end end)
+    G.FovCircle = nil
+    pcall(function() if G._FovRenderConn then G._FovRenderConn:Disconnect() end end)
+    G._FovRenderConn = nil
+    for _, d in pairs(G.CrosshairDrawings or {}) do pcall(function() d:Remove() end) end
+    G.CrosshairDrawings = {}
+    pcall(function()
+        for _, d in pairs(G.EspLineDrawings or {}) do pcall(function() d:Remove() end) end
+        G.EspLineDrawings = {}
+        if G._EspLinesByPlayer then
+            for _, d in pairs(G._EspLinesByPlayer) do pcall(function() d:Remove() end) end
+            G._EspLinesByPlayer = nil
+        end
+    end)
+
+    -- 4) conns persistentes internos
+    pcall(function() if G._ReconnectConn  then G._ReconnectConn:Disconnect()  end end)
+    pcall(function() if G.HitboxESPConn   then G.HitboxESPConn:Disconnect()   end end)
+    pcall(function() if G._EspLinesRemoveConn then G._EspLinesRemoveConn:Disconnect() end end)
+    pcall(function() if G.InvWebhookConn  then G.InvWebhookConn:Disconnect()  end end)
+    pcall(function() if G.SpectateConn     then G.SpectateConn:Disconnect()   end end)
+    pcall(function() if G.StatLockConn     then G.StatLockConn:Disconnect()  end end)
+    pcall(function() if G.CamFOVConn       then G.CamFOVConn:Disconnect()     end end)
+    pcall(function() if G.GodConn          then G.GodConn:Disconnect()       end end)
+    pcall(function() if G.InvisConn        then G.InvisConn:Disconnect()     end end)
+    for _, c in pairs(G.XrayConns or {}) do pcall(function() c:Disconnect() end) end
+    G.XrayConns = {}
+    for p in pairs(G.EspListeners or {}) do
+        for _, c in pairs(G.EspListeners[p]) do pcall(function() c:Disconnect() end) end
+    end
+    G.EspListeners = {}
+    for _, c in pairs(G.FreecamConns or {}) do pcall(function() c:Disconnect() end) end
+    G.FreecamConns = {}
+
+    -- 5) listeners do ESP (Highlight/Billboard) — removeAllESP cuida dos objetos
+    pcall(function() G.removeAllESP() end)
+
+    -- 6) gravidade padrão + GUI do radar
+    pcall(function() workspace.Gravity = 196.2 end)
+    pcall(function() if G._RadarGui then G._RadarGui:Destroy() end end)
+
+    -- 7) reconectores de player (ESP/hitbox CharacterAdded)
+    pcall(function()
+        for _, c in pairs(G._CharConns or {}) do c:Disconnect() end
+        G._CharConns = {}
+    end)
+
+    notify("RoyalHub", "Todas as funções desligadas.", 3, "solar:check-bold")
 end
 
 ------------------------------------------------------------------------

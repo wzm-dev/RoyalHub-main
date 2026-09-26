@@ -1773,14 +1773,17 @@ TabSettings:CreateButton({
 
 TabSettings:CreateButton({
     name = "Ejetar script",
-    description = "Ejeta a script do jogo.",
+    description = "Desliga todas as funções, reverte alterações e remove a UI.",
     callback = function()
         Window:Popup({
             title = "Confirmar Ejeção",
-            content = "Esta ação não pode ser desfeita.",
+            content = "Todas as funções serão desligadas e as alterações revertidas. Esta ação não pode ser desfeita.",
             options = {
                 { text = "Cancelar" },
-                { text = "Ejetar", style = "danger", callback = function() Window:Unload() end },
+                { text = "Ejetar", style = "danger", callback = function()
+                    pcall(function() G.unloadAll() end)  -- desliga tudo ANTES de matar a UI
+                    Window:Unload()
+                end },
             },
         })
     end,
