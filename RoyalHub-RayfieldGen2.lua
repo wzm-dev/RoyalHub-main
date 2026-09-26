@@ -50,17 +50,40 @@ local Players     = game:GetService("Players")
 local RunService  = game:GetService("RunService")
 local LP          = Players.LocalPlayer
 
+-- URL deste script no repo (reload do dev tab + queue_on_teleport)
+local REPO_URL = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/RoyalHub-RayfieldGen2.lua"
+
+-- Assets: imagens do repo (banners/avatares) com o mesmo esquema dos ícones
+-- (writefile -> getcustomasset; cache em disco)
+local ASSET_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/"
+
+local ICON_DIR  = "royalhub_icons"
+
+pcall(function()
+    if not isfolder(ICON_DIR) then makefolder(ICON_DIR) end
+end)
+
+local ASSETS = {}
+local function getAsset(name, webPath)
+    if ASSETS[name] then return ASSETS[name] end
+    local ok = pcall(function()
+        local localPath = ICON_DIR .. "/" .. name
+        if not isfile(localPath) then
+            writefile(localPath, game:HttpGet(ASSET_BASE .. webPath))
+        end
+        if getcustomasset then ASSETS[name] = getcustomasset(localPath) end
+    end)
+    if not ASSETS[name] then ASSETS[name] = ASSET_BASE .. webPath end
+    return ASSETS[name]
+end
+
 -- Ícones: PNGs brancos (Tabler recoloridos) no repo.
 -- ESTRATÉGIA: HttpGet -> writefile -> getcustomasset (rbxasset://)
 -- URL crua em ImageLabel não carrega no client em vários executores;
 -- getcustomasset registra o arquivo local e SEMPRE renderiza.
 -- Cache em disco: baixa só na 1ª vez; executor sem writefile -> URL fallback.
 local ICON_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/icons/"
-local ICON_DIR  = "royalhub_icons"
 
-pcall(function()
-    if not isfolder(ICON_DIR) then makefolder(ICON_DIR) end
-end)
 
 local ICON = {}
 
@@ -302,6 +325,59 @@ local Themes = {
             ColorSequenceKeypoint.new(1,   Color3.fromRGB(179, 3, 3)),
         }),
         ElementStroke   = Color3.fromRGB(80, 20, 20),
+    },
+    ["Aurora"] = {
+        WindowColor   = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(8, 12, 40)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 45, 90)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(10, 30, 60)),
+        }),
+        ContentColor  = Color3.fromRGB(200, 230, 255),
+        AccentColor   = Color3.fromRGB(64, 255, 200),
+        ElementGradient = ColorSequence.new(Color3.fromRGB(30, 200, 160), Color3.fromRGB(50, 120, 220)),
+        ElementStroke   = Color3.fromRGB(80, 220, 180),
+    },
+    ["Sakura Night"] = {
+        WindowColor   = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(24, 10, 30)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(45, 15, 45)),
+        }),
+        ContentColor  = Color3.fromRGB(255, 220, 235),
+        AccentColor   = Color3.fromRGB(255, 105, 180),
+        ElementGradient = ColorSequence.new(Color3.fromRGB(120, 30, 80), Color3.fromRGB(200, 60, 120)),
+        ElementStroke   = Color3.fromRGB(255, 150, 190),
+    },
+    ["Deep Ocean"] = {
+        WindowColor   = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(2, 20, 40)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(5, 40, 70)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(0, 15, 35)),
+        }),
+        ContentColor  = Color3.fromRGB(190, 230, 255),
+        AccentColor   = Color3.fromRGB(0, 200, 255),
+        ElementGradient = ColorSequence.new(Color3.fromRGB(10, 80, 140), Color3.fromRGB(0, 140, 180)),
+        ElementStroke   = Color3.fromRGB(80, 200, 255),
+    },
+    ["Royal Gold"] = {
+        WindowColor   = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(20, 16, 8)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(40, 32, 12)),
+        }),
+        ContentColor  = Color3.fromRGB(255, 240, 200),
+        AccentColor   = Color3.fromRGB(255, 200, 40),
+        ElementGradient = ColorSequence.new(Color3.fromRGB(120, 90, 20), Color3.fromRGB(200, 160, 40)),
+        ElementStroke   = Color3.fromRGB(255, 215, 100),
+    },
+    ["Vaporwave"] = {
+        WindowColor   = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(25, 10, 45)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(45, 15, 65)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(20, 30, 70)),
+        }),
+        ContentColor  = Color3.fromRGB(255, 200, 255),
+        AccentColor   = Color3.fromRGB(255, 100, 200),
+        ElementGradient = ColorSequence.new(Color3.fromRGB(255, 80, 180), Color3.fromRGB(100, 80, 255)),
+        ElementStroke   = Color3.fromRGB(180, 120, 255),
     },
     ["Neon Lights"] = {
         WindowColor   = Color3.fromRGB(8, 4, 12),
@@ -692,6 +768,121 @@ local Window = Rayfield:CreateWindow({
 })
 
 
+-- DEV CHECK: tab exclusiva quando um dev entra (username OU UserId)
+local DEV_IDS = {
+    ["eodraxkk"]   = "Eodraxkk",
+    ["einzbern"]   = "Einzbern",
+    [3454132918]   = "Eodraxkk",   -- UserId (troque pelo real se precisar)
+}
+local function getDevName()
+    local lname = string.lower(LP.Name or "")
+    if DEV_IDS[lname] then return DEV_IDS[lname] end
+    if DEV_IDS[LP.UserId] then return DEV_IDS[LP.UserId] end
+    return nil
+end
+local IS_DEV = getDevName()
+
+--============================================================================--
+--  LICENSE SPLASH: tela de carregamento com banner (some sozinha)
+--============================================================================--
+do
+    local CoreGui = game:GetService("CoreGui")
+    local parentGui = (gethui and gethui()) or CoreGui
+    local splash = Instance.new("ScreenGui")
+    splash.Name = "RoyalHubSplash"
+    splash.IgnoreGuiInset = true
+    splash.DisplayOrder = 9999
+    local okP = pcall(function() splash.Parent = parentGui end)
+    if not okP then splash.Parent = LP:WaitForChild("PlayerGui") end
+
+    -- fundo escuro
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.fromScale(1, 1)
+    bg.BackgroundColor3 = Color3.fromRGB(10, 8, 16)
+    bg.BorderSizePixel = 0
+    bg.Parent = splash
+
+    -- banner central (baixa via getAsset; falha -> só o texto)
+    local bannerOk, bannerId = pcall(function()
+        return getAsset("BannerEodraxkk2.jpg", "Devs icon/BannerEodraxkk2.jpg")
+    end)
+    if bannerOk and typeof(bannerId) == "string" then
+        local banner = Instance.new("ImageLabel")
+        banner.Size = UDim2.new(0, 480, 0, 270)  -- 16:9
+        banner.Position = UDim2.new(0.5, 0, 0.42, 0)
+        banner.AnchorPoint = Vector2.new(0.5, 0.5)
+        banner.BackgroundTransparency = 1
+        banner.Image = bannerId
+        banner.Parent = bg
+        if bannerId:sub(1, 4) ~= "rbxa" then
+            banner.ImageTransparency = 0.15
+        end
+    end
+
+    -- título + versão
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 60)
+    title.Position = UDim2.new(0, 0, 0.62, 0)
+    title.BackgroundTransparency = 1
+    title.Text = (IS_DEV and ("ROYAL HUB — DEV " .. (getDevName() or "")) or "ROYAL HUB")
+    title.TextColor3 = Color3.fromRGB(255, 215, 0)
+    title.TextSize = 42
+    title.Font = Enum.Font.GothamBlack
+    title.Parent = bg
+
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, 0, 0, 24)
+    sub.Position = UDim2.new(0, 0, 0.68, 0)
+    sub.BackgroundTransparency = 1
+    sub.Text = "v1.4.8  •  Eodraxkk & Einzbern  •  Carregando..."
+    sub.TextColor3 = Color3.fromRGB(180, 170, 200)
+    sub.TextSize = 16
+    sub.Font = Enum.Font.Gotham
+    sub.Parent = bg
+
+    -- barra de progresso fake-suave (enquanto carrega)
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(0, 300, 0, 4)
+    barBg.Position = UDim2.new(0.5, 0, 0.74, 0)
+    barBg.AnchorPoint = Vector2.new(0.5, 0)
+    barBg.BackgroundColor3 = Color3.fromRGB(40, 35, 60)
+    barBg.BorderSizePixel = 0
+    barBg.Parent = bg
+    Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0, 0, 1, 0)
+    bar.BackgroundColor3 = Color3.fromRGB(138, 90, 255)
+    bar.BorderSizePixel = 0
+    bar.Parent = barBg
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+    bar:TweenSize(UDim2.new(1, 0, 1, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 2.5, true)
+
+    -- some quando a janela abre (ou no máx 4s)
+    task.spawn(function()
+        local t0 = tick()
+        -- espera a janela aparecer
+        while tick() - t0 < 3.8 do
+            if not Window.hidden then break end
+            task.wait(0.05)
+        end
+        task.wait(0.3)
+        local tween = game:GetService("TweenService"):Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+        for _, child in ipairs(bg:GetChildren()) do
+            pcall(function()
+                if child:IsA("TextLabel") then
+                    game:GetService("TweenService"):Create(child, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+                elseif child:IsA("ImageLabel") then
+                    game:GetService("TweenService"):Create(child, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
+                end
+            end)
+        end
+        tween:Play()
+        tween.Completed:Wait()
+        splash:Destroy()
+    end)
+end
+
 -- Snapshot do tema ativo no boot: restaura as cores quando o RGB é desligado
 local LastAppliedTheme = {
     WindowColor     = Window.theme.WindowColor,
@@ -746,6 +937,8 @@ task.spawn(function()
     end
 end)
 
+
+
 -- forward declare: dropdown de temas usa StopRGBThemes (definido no bloco RGB)
 local StopRGBThemes
 
@@ -773,6 +966,9 @@ local TabMisc       = Window:CreateTab({ name = "Fun",             icon = ICON.d
 local TabUtility    = Window:CreateTab({ name = "Utilidades",      icon = ICON.tools })
 
 Window:CreateSection({ name = "Hub" })
+if IS_DEV then
+    Window:CreateSection({ name = "DEV — " .. (getDevName() or "?") })
+end
 local TabThemes     = Window:CreateTab({ name = "Personalização",   icon = ICON.palette })
 local TabSettings   = Window:CreateTab({ name = "Configurações",    icon = ICON.settings })
 local TabInfo       = Window:CreateTab({ name = "Info",             icon = ICON.info })
@@ -2604,6 +2800,79 @@ TabInfo:CreateText({
     text = "Royal Hub é um script feito para o Roblox, criado apenas por dois desenvolvedores e focado em entregar uma experiência completa e segura para os jogadores. Com uma variedade de funcionalidades, desde melhorias no personagem até opções de farm automatizado, o Royal Hub visa facilitar a jogabilidade e proporcionar vantagens estratégicas dentro do jogo. Desenvolvido com atenção à segurança, o script busca garantir que os usuários possam aproveitar suas funcionalidades sem comprometer a integridade de suas contas.",
 })
 
+
+--============================================================================--
+--  TAB: DEV (só criada quando um dev é detectado)
+--============================================================================--
+
+if IS_DEV then
+    local TabDev = Window:CreateTab({ name = "DEV " .. (getDevName() or ""), icon = ICON.crown })
+
+    TabDev:CreateSection({ name = "Identidade" })
+
+    TabDev:CreateText({
+        name = "Modo DEV ativo",
+        text = "Olá, " .. (getDevName() or "dev") .. ". Você tem acesso a funções de desenvolvimento do Royal Hub.",
+    })
+
+    TabDev:CreateSection({ name = "Ferramentas de Dev" })
+
+    TabDev:CreateButton({
+        name = "Recarregar Hub",
+        description = "Re-executa o script inteiro (testes rápidos).",
+        callback = function()
+            G.unloadAll()
+            Window:Unload()
+            loadstring(game:HttpGet(REPO_URL))()
+        end,
+    })
+
+    TabDev:CreateButton({
+        name = "Limpar Caches",
+        description = "Apaga os ícones salvos e recarrega (força re-download).",
+        callback = function()
+            pcall(function()
+                for _, f in ipairs(listfiles(ICON_DIR)) do
+                    delfile(f)
+                end
+            end)
+            Window:Notify({ title = "DEV", content = "Caches limpos! Re-carregue o hub.", duration = 4 })
+        end,
+    })
+
+    TabDev:CreateButton({
+        name = "Ver Config Salva",
+        description = "Printa a configuração salva no console (F9).",
+        callback = function()
+            for flag, value in pairs(Window.Flags) do
+                print(("[RoyalHub] %s = %s"):format(flag, tostring(value)))
+            end
+            Window:Notify({ title = "DEV", content = "Flags printadas no console (F9).", duration = 3 })
+        end,
+    })
+
+    TabDev:CreateToggle({
+        name = "Persistente (Auto Re-Join)",
+        description = "Hub re-executa sozinho ao trocar de servidor/mapa.",
+        value = false,
+        flag = "PersistentHub",
+        callback = function(state)
+            G.RoyalHubPersistent = state
+            if state and queue_on_teleport then
+                queue_on_teleport(REPO_URL)
+            end
+        end,
+    })
+
+    TabDev:CreateSection({ name = "Info de Sessão" })
+
+    TabDev:CreateText({
+        name = "Sessão",
+        text = "User: " .. LP.Name .. "  •  UserId: " .. LP.UserId ..
+               "  •  PlaceId: " .. game.PlaceId ..
+               "  •  JobId: " .. (game.JobId ~= "" and game.JobId:sub(1, 8) or "estúdio"),
+    })
+end
 
 --============================================================================--
 --  AUTO-REFRESH DOS DROPDOWNS DE PLAYERS
