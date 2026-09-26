@@ -50,14 +50,35 @@ local Players     = game:GetService("Players")
 local RunService  = game:GetService("RunService")
 local LP          = Players.LocalPlayer
 
--- Ícones internos do Rayfield (strings viram URL, números são asset IDs)
+-- Ícones: PNGs brancos (Tabler recoloridos) no repo — raw URLs direto
+local ICON_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/icons/"
 local ICON = {
-    settings   = 129180860773723,
-    check      = 125626312718314,
-    search     = 100604009889706,
-    chevron    = 88479147175134,
-    config     = 125823673784681,
-    rayfield   = 80387863064905,
+    crosshair  = ICON_BASE .. "crosshair.png",
+    target     = ICON_BASE .. "target.png",
+    eye        = ICON_BASE .. "eye.png",
+    flare      = ICON_BASE .. "flare.png",
+    skull      = ICON_BASE .. "skull.png",
+    sun        = ICON_BASE .. "sun.png",
+    video      = ICON_BASE .. "video.png",
+    user       = ICON_BASE .. "user.png",
+    run        = ICON_BASE .. "run.png",
+    rocket     = ICON_BASE .. "rocket.png",
+    shield     = ICON_BASE .. "shield.png",
+    heart      = ICON_BASE .. "heart.png",
+    plant      = ICON_BASE .. "plant.png",
+    cart       = ICON_BASE .. "cart.png",
+    map        = ICON_BASE .. "map.png",
+    cloud      = ICON_BASE .. "cloud.png",
+    dice       = ICON_BASE .. "dice.png",
+    tools      = ICON_BASE .. "tools.png",
+    terminal   = ICON_BASE .. "terminal.png",
+    box        = ICON_BASE .. "box.png",
+    bolt       = ICON_BASE .. "bolt.png",
+    settings   = ICON_BASE .. "settings.png",
+    palette    = ICON_BASE .. "palette.png",
+    info       = ICON_BASE .. "info.png",
+    keyboard   = ICON_BASE .. "keyboard.png",
+    crown      = ICON_BASE .. "crown.png",
 }
 
 -- Nomes de players como array de strings (dropdown Gen2 usa strings, o
@@ -288,7 +309,7 @@ local Themes = {
 local Window = Rayfield:CreateWindow({
     name      = "RoyalHub",
     subtitle  = "Eodraxkk & Einzbern",
-    icon      = ICON.rayfield,
+    icon      = ICON.crown,
     theme     = "default",
     sidebarLayout = true,       -- 9 tabs -> rail lateral como no WindUI
     showName  = "Royal Hub",    -- pill quando a janela está escondida
@@ -719,27 +740,6 @@ end)
 local StopRGBThemes
 
 --============================================================================--
---  SYNC FOV CIRCLE <-> JANELA
---  (painel aberto + usuário quer círculo = desenha; painel fechado = esconde)
---============================================================================--
-
-G._FovUserWants = Window.Flags and Window.Flags.FOVShowCircle or false
-
-task.spawn(function()
-    local wasHidden = nil
-    while not Window.unloaded do
-        local hidden = Window.hidden
-        if hidden ~= wasHidden then
-            wasHidden = hidden
-            if G._FovUserWants then
-                G.FOVShowCircle = not hidden
-            end
-        end
-        task.wait(0.2)
-    end
-end)
-
---============================================================================--
 --  TABS - organização nova (12 tabs em 4 grupos no rail)
 --  [Combat]      Aimbot & Combat | Visual
 --  [Personagem]  Personagem | Farm | Loja | Teleporte
@@ -748,24 +748,24 @@ end)
 --============================================================================--
 
 Window:CreateSection({ name = "Combat" })
-local TabHome       = Window:CreateTab({ name = "Aimbot & Combat", icon = ICON.config })
-local TabVisual     = Window:CreateTab({ name = "Visual",           icon = ICON.rayfield })
+local TabHome       = Window:CreateTab({ name = "Aimbot & Combat", icon = ICON.crosshair })
+local TabVisual     = Window:CreateTab({ name = "Visual",           icon = ICON.eye })
 
 Window:CreateSection({ name = "Personagem" })
-local TabPersonagem = Window:CreateTab({ name = "Personagem",       icon = ICON.rayfield })
-local TabFarm       = Window:CreateTab({ name = "Farm",             icon = ICON.rayfield })
-local TabShopping   = Window:CreateTab({ name = "Loja",             icon = ICON.rayfield })
-local TabTeleport   = Window:CreateTab({ name = "Teleporte",        icon = ICON.rayfield })
+local TabPersonagem = Window:CreateTab({ name = "Personagem",       icon = ICON.user })
+local TabFarm       = Window:CreateTab({ name = "Farm",             icon = ICON.plant })
+local TabShopping   = Window:CreateTab({ name = "Loja",             icon = ICON.cart })
+local TabTeleport   = Window:CreateTab({ name = "Teleporte",        icon = ICON.map })
 
 Window:CreateSection({ name = "Utilidades" })
-local TabExploits   = Window:CreateTab({ name = "Exploits",         icon = ICON.rayfield })
-local TabMisc       = Window:CreateTab({ name = "Fun",             icon = ICON.rayfield })
-local TabUtility    = Window:CreateTab({ name = "Utilidades",      icon = ICON.rayfield })
+local TabExploits   = Window:CreateTab({ name = "Exploits",         icon = ICON.bolt })
+local TabMisc       = Window:CreateTab({ name = "Fun",             icon = ICON.dice })
+local TabUtility    = Window:CreateTab({ name = "Utilidades",      icon = ICON.tools })
 
 Window:CreateSection({ name = "Hub" })
-local TabThemes     = Window:CreateTab({ name = "Personalização",   icon = ICON.settings })
+local TabThemes     = Window:CreateTab({ name = "Personalização",   icon = ICON.palette })
 local TabSettings   = Window:CreateTab({ name = "Configurações",    icon = ICON.settings })
-local TabInfo       = Window:CreateTab({ name = "Info",             icon = ICON.rayfield })
+local TabInfo       = Window:CreateTab({ name = "Info",             icon = ICON.info })
 
 --============================================================================--
 --  TAB: INICIO — Seção Aimbot
@@ -815,13 +815,10 @@ TabHome:CreateToggle({
 --  O toggle abaixo sobrescreve: OFF aqui = nunca mostra, mesmo com painel aberto)
 TabHome:CreateToggle({
     name = "Mostrar Círculo",
-    description = "Desenha o círculo de FOV na tela (precisa de Drawing API). Sincroniza com o painel: abre = mostra, fecha = esconde.",
+    description = "Desenha o círculo de FOV na tela (precisa de Drawing API). Fica visível mesmo com o painel fechado.",
     value = false,
     flag = "FOVShowCircle",
-    callback = function(state)
-        G._FovUserWants = state
-        G.FOVShowCircle = state and not Window.hidden
-    end,
+    callback = function(state) G.FOVShowCircle = state end,
 })
 
 TabHome:CreateSlider({
@@ -879,39 +876,7 @@ TabHome:CreateSlider({
     callback = function(value) G.AimbotSmoothFactor = value end,
 })
 
-local ToggleESP = TabHome:CreateToggle({
-    name = "ESP",
-    description = "Players ficam visíveis atrás de paredes e marcados.",
-    flag = "ESP",
-    callback = function(state) G.toggleESP(state) end,
-})
 
-local ToggleESP2 = TabHome:CreateToggle({
-    name = "Esp 2.0 (Twilight)",
-    description = "ESP com health bar, box e nome — powered by Twilight.",
-    flag = "ESP2",
-    callback = function(state)
-        if state and G.EspEnabled then
-            G.toggleESP(false)
-            ToggleESP:Set(false, true)
-        end
-    end,
-})
-ToggleESP2:Lock("Em desenvolvimento.")
-
-TabHome:CreateToggle({
-    name = "ESP — Linhas",
-    description = "Desenha linhas do centro da tela até cada inimigo (usa Drawing API).",
-    flag = "ESPLines",
-    callback = function(state) G.toggleEspLines(state) end,
-})
-
-TabHome:CreateToggle({
-    name = "ESP — Hitbox Visual",
-    description = "Mostra caixas vermelhas ao redor da hitbox expandida (requer Hitbox Expander ativo).",
-    flag = "HitboxESP",
-    callback = function(state) G.toggleHitboxESP(state) end,
-})
 
 TabHome:CreateToggle({
     name = "Fake TP (Dodge)",
@@ -1051,37 +1016,11 @@ TabHome:CreateSlider({
 --  TAB: INICIO — Seção Visual
 --============================================================================--
 
-TabVisual:CreateSection({ name = "Visual" })
+--============================================================================--
+--  TAB: VISUAL — ESPs primeiro, cores/ajustes junto de cada um, utilidades depois
+--============================================================================--
 
-local SpectateDropdown = TabVisual:CreateDropdown({
-    name = "Selecione o Player",
-    description = "Seleciona o player para spectate.",
-    options = getPlayerNames(),
-    placeholder = "Selecione...",
-    flag = "SpectateTarget",
-    callback = function(option)
-        SelectedPlayerToView = Players:FindFirstChild(option)
-        G.SpectateTargetName = option
-        -- se o highlight já estiver ligado, re-aplica no novo alvo
-        if G.TargetHighlightEnabled then
-            G.toggleTargetHighlight(false)
-            G.toggleTargetHighlight(true)
-        end
-    end,
-})
-
-TabVisual:CreateToggle({
-    name = "Spectate Player",
-    description = "Ativa câmera na perspectiva do player selecionado.",
-    flag = "Spectate",
-    callback = function(state)
-        if state then
-            if SelectedPlayerToView then G.startSpectate(SelectedPlayerToView) end
-        else
-            G.stopSpectate()
-        end
-    end,
-})
+TabVisual:CreateSection({ name = "ESP" })
 
 TabVisual:CreateToggle({
     name = "ESP Bones",
@@ -1120,9 +1059,42 @@ TabVisual:CreateColorPicker({
     callback = function(color) G.ChamsColor = color end,
 })
 
+local ToggleESP = TabVisual:CreateToggle({
+    name = "ESP",
+    description = "Players ficam visíveis atrás de paredes e marcados.",
+    flag = "ESP",
+    callback = function(state) G.toggleESP(state) end,
+})
+
+local ToggleESP2 = TabVisual:CreateToggle({
+    name = "Esp 2.0 (Twilight)",
+    description = "ESP com health bar, box e nome — powered by Twilight.",
+    flag = "ESP2",
+    callback = function(state)
+        if state and G.EspEnabled then
+            G.toggleESP(false)
+            ToggleESP:Set(false, true)
+        end
+    end,
+})
+ToggleESP2:Lock("Em desenvolvimento.")
+
+TabVisual:CreateToggle({
+    name = "ESP — Linhas",
+    description = "Desenha linhas do centro da tela até cada inimigo (usa Drawing API).",
+    flag = "ESPLines",
+    callback = function(state) G.toggleEspLines(state) end,
+})
+
+TabVisual:CreateToggle({
+    name = "ESP — Hitbox Visual",
+    description = "Mostra caixas vermelhas ao redor da hitbox expandida (requer Hitbox Expander ativo).",
+    flag = "HitboxESP",
+    callback = function(state) G.toggleHitboxESP(state) end,
+})
 TabVisual:CreateToggle({
     name = "Highlight no Alvo",
-    description = "Highlight no jogador selecionado em 'Selecione o Player' (Visual).",
+    description = "Highlight no jogador selecionado em 'Selecione o Player' (seção Câmera & Crosshair).",
     flag = "TargetHighlight",
     callback = function(state) G.toggleTargetHighlight(state) end,
 })
@@ -1134,14 +1106,38 @@ TabVisual:CreateColorPicker({
     callback = function(color) G.setTargetHighlightColor(color) end,
 })
 
-TabVisual:CreateToggle({
-    name = "NoClip",
-    description = "Permite atravessar paredes e objetos.",
-    flag = "NoClip",
-    callback = function(state) G.toggleNoClip(state) end,
+TabVisual:CreateSection({ name = "Câmera & Crosshair" })
+
+local SpectateDropdown = TabVisual:CreateDropdown({
+    name = "Selecione o Player",
+    description = "Seleciona o player para spectate.",
+    options = getPlayerNames(),
+    placeholder = "Selecione...",
+    flag = "SpectateTarget",
+    callback = function(option)
+        SelectedPlayerToView = Players:FindFirstChild(option)
+        G.SpectateTargetName = option
+        -- se o highlight já estiver ligado, re-aplica no novo alvo
+        if G.TargetHighlightEnabled then
+            G.toggleTargetHighlight(false)
+            G.toggleTargetHighlight(true)
+        end
+    end,
 })
 
--- Crosshair custom
+TabVisual:CreateToggle({
+    name = "Spectate Player",
+    description = "Ativa câmera na perspectiva do player selecionado.",
+    flag = "Spectate",
+    callback = function(state)
+        if state then
+            if SelectedPlayerToView then G.startSpectate(SelectedPlayerToView) end
+        else
+            G.stopSpectate()
+        end
+    end,
+})
+
 TabVisual:CreateToggle({
     name = "Crosshair",
     description = "Crosshair customizado no centro da tela (Drawing API).",
@@ -1175,7 +1171,6 @@ TabVisual:CreateColorPicker({
     callback = function(color) G.setCrosshairColor(color) end,
 })
 
--- Camera FOV (FieldOfView real da câmera)
 TabVisual:CreateToggle({
     name = "Camera FOV",
     description = "Altera o campo de visão da câmera.",
@@ -1193,6 +1188,14 @@ TabVisual:CreateSlider({
     callback = function(value) G.setCamFOV(value) end,
 })
 
+TabVisual:CreateSection({ name = "Mundo" })
+
+TabVisual:CreateToggle({
+    name = "NoClip",
+    description = "Permite atravessar paredes e objetos.",
+    flag = "NoClip",
+    callback = function(state) G.toggleNoClip(state) end,
+})
 --============================================================================--
 --  TAB: PERSONAGEM
 --============================================================================--
