@@ -588,6 +588,14 @@ local Window = Rayfield:CreateWindow({
             ["Info Cor (Nome)"] = "Info Color (Name)",
             ["ESP Health Bar"] = "ESP Health Bar",
             ["ESP Info"] = "ESP Info",
+            ["Minimap"] = "Minimap",
+            ["Radar 2D no canto da tela: você no centro, seta = visão da câmera."] = "2D radar on screen: you at the center, arrow = camera facing.",
+            ["Minimap Alcance"] = "Minimap Range",
+            ["Raio de detecção em studs."] = "Detection radius in studs.",
+            ["Minimap Nomes"] = "Minimap Names",
+            ["Mostra o nome acima de cada blip."] = "Shows the name above each blip.",
+            ["Minimap Cores de Time"] = "Minimap Team Colors",
+            ["Aliados azuis, inimigos vermelhos."] = "Allies blue, enemies red.",
         },
         -- Español
         ["es"] = {
@@ -759,6 +767,14 @@ local Window = Rayfield:CreateWindow({
             ["Info Cor (Nome)"] = "Info Color (Nombre)",
             ["ESP Health Bar"] = "ESP Health Bar",
             ["ESP Info"] = "ESP Info",
+            ["Minimap"] = "Minimapa",
+            ["Radar 2D no canto da tela: você no centro, seta = visão da câmera."] = "Radar 2D: tú en el centro, flecha = visión de cámara.",
+            ["Minimap Alcance"] = "Alcance del Minimapa",
+            ["Raio de detecção em studs."] = "Radio de detección en studs.",
+            ["Minimap Nomes"] = "Nombres en Minimapa",
+            ["Mostra o nome acima de cada blip."] = "Muestra el nombre sobre cada blip.",
+            ["Minimap Cores de Time"] = "Colores de Equipo",
+            ["Aliados azuis, inimigos vermelhos."] = "Aliados azules, enemigos rojos.",
         },
     },
 })
@@ -1318,6 +1334,39 @@ TabVisual:CreateSlider({
 TabVisual:CreateSection({ name = "Mundo" })
 
 TabVisual:CreateToggle({
+    name = "Minimap",
+    description = "Radar 2D no canto da tela: você no centro, seta = visão da câmera.",
+    flag = "Radar",
+    callback = function(state) G.toggleRadar(state) end,
+})
+
+TabVisual:CreateSlider({
+    name = "Minimap Alcance",
+    description = "Raio de detecção em studs.",
+    range = { 50, 1000 },
+    increment = 25,
+    value = 150,
+    flag = "RadarRange",
+    callback = function(value) G.setRadarRange(value) end,
+})
+
+TabVisual:CreateToggle({
+    name = "Minimap Nomes",
+    description = "Mostra o nome acima de cada blip.",
+    value = true,
+    flag = "RadarShowNames",
+    callback = function(state) G.RadarShowNames = state end,
+})
+
+TabVisual:CreateToggle({
+    name = "Minimap Cores de Time",
+    description = "Aliados azuis, inimigos vermelhos.",
+    value = true,
+    flag = "RadarShowTeam",
+    callback = function(state) G.RadarShowTeam = state end,
+})
+
+TabVisual:CreateToggle({
     name = "NoClip",
     description = "Permite atravessar paredes e objetos.",
     flag = "NoClip",
@@ -1533,20 +1582,7 @@ TabPersonagem:CreateToggle({
     callback = function(state) G.toggleHoverName(state) end,
 })
 
-TabPersonagem:CreateToggle({
-    name = "Radar",
-    description = "Radar 2D mostrando posição dos inimigos.",
-    flag = "Radar",
-    callback = function(state) G.toggleRadar(state) end,
-})
 
-TabPersonagem:CreateSlider({
-    name = "Radar Range",
-    description = "Alcance do radar (em studs).",
-    range = { 50, 500 }, increment = 10, value = 150,
-    flag = "RadarRange",
-    callback = function(value) G.RadarRange = value end,
-})
 
 TabPersonagem:CreateToggle({
     name = "Click TP",

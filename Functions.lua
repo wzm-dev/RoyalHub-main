@@ -1055,80 +1055,250 @@ function G.serverHop()
 end
 
 ------------------------------------------------------------------------
--- RADAR 2D
+-- MINIMAP 2D (refeito: quadrado moderno, você no centro, seta de visão,
+-- blips por jogador com nome, cor por time, círculos de range e suavização)
 ------------------------------------------------------------------------
-local RadarGui = Instance.new("ScreenGui")
-RadarGui.Name = "RoyalHubRadar"; RadarGui.ResetOnSpawn = false
-local ok = pcall(function() RadarGui.Parent = game:GetService("CoreGui") end)
-if not ok then RadarGui.Parent = LP:WaitForChild("PlayerGui") end
-G._RadarGui = RadarGui
+G.RadarEnabled      = false
+G.RadarRange        = 150
+G.RadarShowNames    = true
+G.RadarShowTeam     = true
+G.RadarSize         = 220
+G.RadarPos          = { x = 1, y = 1, xoff = -20, yoff = -20 }  -- canto sup-direito
+G.RadarGui          = nil
+G.RadarConn         = nil
+G._RadarBlips       = {}   -- [player] = {frame, label, tweens}
 
-local RPXL = 185
-local RF = Instance.new("Frame")
-RF.Size = UDim2.fromOffset(RPXL,RPXL); RF.Position = UDim2.new(1,-RPXL-10,1,-RPXL-50)
-RF.BackgroundColor3 = Color3.fromRGB(5,5,5); RF.BackgroundTransparency = 0.35
-RF.BorderSizePixel = 0; RF.Visible = false; RF.ClipsDescendants = true; RF.Parent = RadarGui
-Instance.new("UICorner",RF).CornerRadius = UDim.new(1,0)
-local rs = Instance.new("UIStroke"); rs.Color = Color3.fromRGB(200,30,30); rs.Thickness = 2; rs.Parent = RF
-for _, h in ipairs({true,false}) do
-    local ln = Instance.new("Frame"); ln.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    ln.BackgroundTransparency = 0.3; ln.BorderSizePixel = 0
-    ln.Size  = h and UDim2.new(1,0,0,1) or UDim2.new(0,1,1,0)
-    ln.Position = h and UDim2.new(0,0,.5,0) or UDim2.new(.5,0,0,0); ln.Parent = RF
+local function _radarDestroy()
+    if G._RadarBlips then
+        for _, b in pairs(G._RadarBlips) do
+            pcall(function() b.frame:Destroy() end)
+        end
+    end
+    G._RadarBlips = {}
+    if G.RadarGui then
+        pcall(function() G.RadarGui:Destroy() end)
+        G.RadarGui = nil
+    end
 end
-local nLbl = Instance.new("TextLabel"); nLbl.Size = UDim2.fromOffset(16,14)
-nLbl.Position = UDim2.new(.5,-8,0,5); nLbl.BackgroundTransparency = 1
-nLbl.Text = "N"; nLbl.TextColor3 = Color3.fromRGB(180,180,180)
-nLbl.TextSize = 10; nLbl.Font = Enum.Font.Gotham; nLbl.ZIndex = 6; nLbl.Parent = RF
-local sd = Instance.new("Frame"); sd.Size = UDim2.fromOffset(9,9)
-sd.Position = UDim2.new(.5,-4,.5,-4); sd.BackgroundColor3 = Color3.fromRGB(0,230,80)
-sd.BorderSizePixel = 0; sd.ZIndex = 6; sd.Parent = RF
-Instance.new("UICorner",sd).CornerRadius = UDim.new(1,0)
+
+local function _radarBuild()
+    _radarDestroy()
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "RoyalHubMinimap"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = 5
+    local ok = pcall(function() gui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+    if not ok then gui.Parent = LP:WaitForChild("PlayerGui") end
+    G.RadarGui = gui
+
+    local S = G.RadarSize
+
+    local root = Instance.new("Frame")
+    root.Size = UDim2.fromOffset(S, S)
+    root.Position = UDim2.new(1, -S - 20, 0, 20)  -- canto sup-direito
+    root.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+    root.BackgroundTransparency = 0.15
+    root.BorderSizePixel = 0
+    root.ClipsDescendants = true
+    root.Parent = gui
+    Instance.new("UICorner", root).CornerRadius = UDim.new(0, 10)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(90, 90, 140)
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.3
+    stroke.Parent = root
+
+    -- grade de fundo
+    local grid = Instance.new("Frame")
+    grid.Size = UDim2.fromScale(1, 1)
+    grid.BackgroundTransparency = 1
+    grid.Parent = root
+    for i = 1, 3 do
+        local ln = Instance.new("Frame")
+        ln.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+        ln.BackgroundTransparency = 0.75
+        ln.BorderSizePixel = 0
+        ln.Size = UDim2.new(1, 0, 0, 1)
+        ln.Position = UDim2.new(0, 0, i / 4, 0)
+        ln.Parent = grid
+        local ln2 = ln:Clone()
+        ln2.Size = UDim2.new(0, 1, 1, 0)
+        ln2.Position = UDim2.new(i / 4, 0, 0, 0)
+        ln2.Parent = grid
+    end
+
+    -- círculos de range (1/2 e range total)
+    for _, frac in ipairs({ 0.25, 0.5, 0.75 }) do
+        local circ = Instance.new("Frame")
+        local d = S * frac * 1.6
+        circ.Size = UDim2.fromOffset(d, d)
+        circ.Position = UDim2.new(0.5, -d / 2, 0.5, -d / 2)
+        circ.BackgroundTransparency = 1
+        circ.BorderSizePixel = 0
+        circ.Parent = root
+        Instance.new("UICorner", circ).CornerRadius = UDim.new(1, 0)
+        local cst = Instance.new("UIStroke")
+        cst.Color = Color3.fromRGB(70, 70, 110)
+        cst.Thickness = 1
+        cst.Transparency = 0.8
+        cst.Parent = circ
+    end
+
+    -- você: seta apontando pra onde a câmera olha
+    local me = Instance.new("Frame")
+    me.Size = UDim2.fromOffset(10, 10)
+    me.Position = UDim2.new(0.5, -5, 0.5, -5)
+    me.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
+    me.BorderSizePixel = 0
+    me.Parent = root
+    Instance.new("UICorner", me).CornerRadius = UDim.new(1, 0)
+    local meArrow = Instance.new("Frame")
+    meArrow.Size = UDim2.fromOffset(4, 12)
+    meArrow.AnchorPoint = Vector2.new(0.5, 1)
+    meArrow.Position = UDim2.new(0.5, 0, 0.5, -2)
+    meArrow.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
+    meArrow.BorderSizePixel = 0
+    meArrow.Parent = root
+    Instance.new("UICorner", meArrow).CornerRadius = UDim.new(0, 2)
+
+    -- label de range no rodapé
+    local rangeLbl = Instance.new("TextLabel")
+    rangeLbl.Size = UDim2.new(1, 0, 0, 14)
+    rangeLbl.Position = UDim2.new(0, 0, 1, -16)
+    rangeLbl.BackgroundTransparency = 1
+    rangeLbl.Text = G.RadarRange .. " studs"
+    rangeLbl.TextColor3 = Color3.fromRGB(150, 150, 180)
+    rangeLbl.TextSize = 11
+    rangeLbl.Font = Enum.Font.Gotham
+    rangeLbl.Parent = root
+
+    G._RadarRoot = root
+    G._RadarMeArrow = meArrow
+    G._RadarRangeLbl = rangeLbl
+end
+
+local function _radarGetBlip(p)
+    if G._RadarBlips[p] then return G._RadarBlips[p] end
+    local root = G._RadarRoot
+    if not root then return nil end
+
+    local blip = Instance.new("Frame")
+    blip.Size = UDim2.fromOffset(8, 8)
+    blip.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    blip.BorderSizePixel = 0
+    blip.Parent = root
+    Instance.new("UICorner", blip).CornerRadius = UDim.new(1, 0)
+    local bst = Instance.new("UIStroke")
+    bst.Color = Color3.fromRGB(0, 0, 0)
+    bst.Thickness = 1
+    bst.Transparency = 0.4
+    bst.Parent = blip
+
+    local lbl = nil
+    if G.RadarShowNames then
+        lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0, 90, 0, 12)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = p.Name
+        lbl.TextColor3 = Color3.fromRGB(255, 220, 220)
+        lbl.TextSize = 10
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextStrokeTransparency = 0.6
+        lbl.TextXAlignment = Enum.TextXAlignment.Center
+        lbl.Parent = root
+    end
+
+    local data = { frame = blip, label = lbl }
+    G._RadarBlips[p] = data
+    return data
+end
 
 function G.toggleRadar(enabled)
-    G.RadarEnabled = enabled; RF.Visible = enabled
-    if enabled then
-        G.RadarConn = S.Run.Heartbeat:Connect(function()
-            for _, d in pairs(G.RadarDots) do pcall(function() d:Destroy() end) end
-            G.RadarDots = {}
-            local char  = LP.Character; if not char then return end
-            local lroot = char:FindFirstChild("HumanoidRootPart"); if not lroot then return end
-            local lpos  = lroot.Position
-            local camY  = 0
-            pcall(function()
-                local _, y, _ = workspace.CurrentCamera.CFrame:ToEulerAnglesYXZ(); camY = y
-            end)
-            for _, p in ipairs(S.Players:GetPlayers()) do
-                if p ~= LP and p.Character then
-                    local r = p.Character:FindFirstChild("HumanoidRootPart")
-                    if r then
-                        local diff = r.Position - lpos
-                        local rx = diff.X*math.cos(-camY) - diff.Z*math.sin(-camY)
-                        local rz = diff.X*math.sin(-camY) + diff.Z*math.cos(-camY)
-                        local nx = math.clamp(rx/G.RadarRange,-0.46,0.46)
-                        local nz = math.clamp(rz/G.RadarRange,-0.46,0.46)
-                        local dot = Instance.new("Frame")
-                        dot.Size = UDim2.fromOffset(7,7)
-                        dot.Position = UDim2.new(.5+nx,-3,.5+nz,-3)
-                        dot.BackgroundColor3 = Color3.fromRGB(255,55,55)
-                        dot.BorderSizePixel = 0; dot.ZIndex = 5; dot.Parent = RF
-                        Instance.new("UICorner",dot).CornerRadius = UDim.new(1,0)
-                        local lb = Instance.new("TextLabel")
-                        lb.Size = UDim2.fromOffset(70,11); lb.Position = UDim2.new(0,10,0,-2)
-                        lb.BackgroundTransparency = 1; lb.Text = p.Name
-                        lb.TextColor3 = Color3.fromRGB(255,210,210); lb.TextSize = 8
-                        lb.Font = Enum.Font.Gotham; lb.TextXAlignment = Enum.TextXAlignment.Left
-                        lb.ZIndex = 6; lb.Parent = dot
-                        table.insert(G.RadarDots, dot)
+    G.RadarEnabled = enabled
+    if G.RadarConn then G.RadarConn:Disconnect() G.RadarConn = nil end
+    if not enabled then
+        _radarDestroy()
+        return
+    end
+    _radarBuild()
+
+    G.RadarConn = S.Run.Heartbeat:Connect(function()
+        if not G._RadarRoot or not G._RadarRoot.Parent then return end
+        local char = LP.Character
+        local lroot = char and char:FindFirstChild("HumanoidRootPart")
+        if not lroot then return end
+
+        local camY = 0
+        pcall(function()
+            local _, y = workspace.CurrentCamera.CFrame:ToEulerAnglesYXZ()
+            camY = y
+        end)
+
+        -- seta do player gira com a câmera
+        G._RadarMeArrow.Rotation = -math.deg(camY)
+
+        -- label de range atualizado (slider muda G.RadarRange ao vivo)
+        G._RadarRangeLbl.Text = G.RadarRange .. " studs"
+
+        local half = G.RadarSize / 2
+        local range = G.RadarRange
+        local myTeam = LP.Team
+        local seen = {}
+
+        for _, p in ipairs(S.Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                local pr  = p.Character:FindFirstChild("HumanoidRootPart")
+                if pr and hum and hum.Health > 0 then
+                    local diff = pr.Position - lroot.Position
+                    local dist = diff.Magnitude
+                    if dist <= range then
+                        seen[p] = true
+                        local blip = G._RadarGetBlip and G._RadarGetBlip(p) or _radarGetBlip(p)
+                        if blip then
+                            -- rotaciona o mundo pelo olhar da câmera (você fixo no centro)
+                            local cosY, sinY = math.cos(-camY), math.sin(-camY)
+                            local rx = diff.X * cosY - diff.Z * sinY
+                            local rz = diff.X * sinY + diff.Z * cosY
+                            -- normaliza pro quadrado
+                            local nx = math.clamp(rx / range, -1, 1) * (half - 14)
+                            local ny = math.clamp(rz / range, -1, 1) * (half - 14)
+                            blip.frame.Position = UDim2.new(0.5, nx - 4, 0.5, ny - 4)
+
+                            -- cor: aliado azul, inimigo vermelho
+                            if G.RadarShowTeam then
+                                local isAlly = myTeam and p.Team == myTeam
+                                blip.frame.BackgroundColor3 = isAlly
+                                    and Color3.fromRGB(60, 130, 255)
+                                    or  Color3.fromRGB(255, 60, 60)
+                            end
+
+                            -- label segue o blip
+                            if blip.label then
+                                blip.label.Position = UDim2.new(
+                                    0.5, nx - 45,
+                                    0.5, ny - 18)
+                            end
+                        end
                     end
                 end
             end
-        end)
-    else
-        if G.RadarConn then G.RadarConn:Disconnect() G.RadarConn = nil end
-        for _, d in pairs(G.RadarDots) do pcall(function() d:Destroy() end) end
-        G.RadarDots = {}
-    end
+        end
+
+        -- quem sumiu (saiu do range/morreu) tem o blip removido
+        for p, b in pairs(G._RadarBlips) do
+            if not seen[p] then
+                pcall(function() b.frame:Destroy() end)
+                if b.label then pcall(function() b.label:Destroy() end) end
+                G._RadarBlips[p] = nil
+            end
+        end
+    end)
+end
+
+function G.setRadarRange(v)
+    G.RadarRange = v
 end
 
 ------------------------------------------------------------------------
@@ -1829,28 +1999,37 @@ local function _esp2dStart()
                             _esp2dHideKeys(p, HP_KEYS)
                         end
 
-                        -- ===== INFO (nome acima, distância embaixo) =====
+                        -- ===== INFO (ancorado na CABEÇA — o box gira com o char e
+                        --      dava posição errada; head é fixo e correto) =====
                         if G.EspInfoEnabled then
-                            local nameTxt = _esp2dObj(p, "nameTxt", "Text")
-                            if nameTxt then
-                                nameTxt.Visible   = true
-                                nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
-                                nameTxt.Position  = Vector2.new((minX + maxX) / 2, minY - 20)
-                                nameTxt.Size      = 16
-                                nameTxt.Center    = true
-                                nameTxt.Outline   = true
-                                nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
-                            end
-                            local distTxt = _esp2dObj(p, "distTxt", "Text")
-                            if distTxt then
-                                local dist = math.floor((camPos - root.Position).Magnitude)
-                                distTxt.Visible   = true
-                                distTxt.Text      = dist .. "m"
-                                distTxt.Position  = Vector2.new((minX + maxX) / 2, maxY + 4)
-                                distTxt.Size      = 13
-                                distTxt.Center    = true
-                                distTxt.Outline   = true
-                                distTxt.Color     = Color3.fromRGB(200, 200, 200)
+                            local head = char:FindFirstChild("Head") or root
+                            local hpScr, headOn = cam:WorldToViewportPoint(head.Position)
+                            if headOn then
+                                local nameTxt = _esp2dObj(p, "nameTxt", "Text")
+                                if nameTxt then
+                                    nameTxt.Visible   = true
+                                    nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
+                                    -- Position com Center=true: centro horizontal no X da cabeça
+                                    -- e o TOPO do texto um pouco acima da cabeça
+                                    nameTxt.Position  = Vector2.new(hpScr.X, hpScr.Y - 30)
+                                    nameTxt.Size      = 16
+                                    nameTxt.Center    = true
+                                    nameTxt.Outline   = true
+                                    nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
+                                end
+                                local distTxt = _esp2dObj(p, "distTxt", "Text")
+                                if distTxt then
+                                    local dist = math.floor((camPos - root.Position).Magnitude)
+                                    distTxt.Visible   = true
+                                    distTxt.Text      = dist .. "m"
+                                    distTxt.Position  = Vector2.new(hpScr.X, hpScr.Y - 46)
+                                    distTxt.Size      = 13
+                                    distTxt.Center    = true
+                                    distTxt.Outline   = true
+                                    distTxt.Color     = Color3.fromRGB(200, 200, 200)
+                                end
+                            else
+                                _esp2dHideKeys(p, INFO_KEYS)
                             end
                         else
                             _esp2dHideKeys(p, INFO_KEYS)
