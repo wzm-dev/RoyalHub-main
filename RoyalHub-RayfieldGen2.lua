@@ -50,36 +50,46 @@ local Players     = game:GetService("Players")
 local RunService  = game:GetService("RunService")
 local LP          = Players.LocalPlayer
 
--- Ícones: PNGs brancos (Tabler recoloridos) no repo — raw URLs direto
+-- Ícones: PNGs brancos (Tabler recoloridos) no repo.
+-- ESTRATÉGIA: HttpGet -> writefile -> getcustomasset (rbxasset://)
+-- URL crua em ImageLabel não carrega no client em vários executores;
+-- getcustomasset registra o arquivo local e SEMPRE renderiza.
+-- Cache em disco: baixa só na 1ª vez; executor sem writefile -> URL fallback.
 local ICON_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/icons/"
-local ICON = {
-    crosshair  = ICON_BASE .. "crosshair.png",
-    target     = ICON_BASE .. "target.png",
-    eye        = ICON_BASE .. "eye.png",
-    flare      = ICON_BASE .. "flare.png",
-    skull      = ICON_BASE .. "skull.png",
-    sun        = ICON_BASE .. "sun.png",
-    video      = ICON_BASE .. "video.png",
-    user       = ICON_BASE .. "user.png",
-    run        = ICON_BASE .. "run.png",
-    rocket     = ICON_BASE .. "rocket.png",
-    shield     = ICON_BASE .. "shield.png",
-    heart      = ICON_BASE .. "heart.png",
-    plant      = ICON_BASE .. "plant.png",
-    cart       = ICON_BASE .. "cart.png",
-    map        = ICON_BASE .. "map.png",
-    cloud      = ICON_BASE .. "cloud.png",
-    dice       = ICON_BASE .. "dice.png",
-    tools      = ICON_BASE .. "tools.png",
-    terminal   = ICON_BASE .. "terminal.png",
-    box        = ICON_BASE .. "box.png",
-    bolt       = ICON_BASE .. "bolt.png",
-    settings   = ICON_BASE .. "settings.png",
-    palette    = ICON_BASE .. "palette.png",
-    info       = ICON_BASE .. "info.png",
-    keyboard   = ICON_BASE .. "keyboard.png",
-    crown      = ICON_BASE .. "crown.png",
-}
+local ICON_DIR  = "royalhub_icons"
+
+pcall(function()
+    if not isfolder(ICON_DIR) then makefolder(ICON_DIR) end
+end)
+
+local ICON = {}
+
+local function getIcon(name)
+    local webPath = ICON_BASE .. name .. ".png"
+    -- tenta registrar localmente
+    local okFile = pcall(function()
+        local localPath = ICON_DIR .. "/" .. name .. ".png"
+        if not isfile(localPath) then
+            writefile(localPath, game:HttpGet(webPath))
+        end
+        if getcustomasset then
+            ICON[name] = getcustomasset(localPath)
+        end
+    end)
+    -- fallback: URL crua
+    if not ICON[name] then
+        ICON[name] = webPath
+    end
+    return ICON[name]
+end
+for _, iconName in ipairs({
+    "crosshair", "target", "eye", "flare", "skull", "sun", "video",
+    "user", "run", "rocket", "shield", "heart", "plant", "cart",
+    "map", "cloud", "dice", "tools", "terminal", "box", "bolt",
+    "settings", "palette", "info", "keyboard", "crown",
+}) do
+    getIcon(iconName)
+end
 
 -- Nomes de players como array de strings (dropdown Gen2 usa strings, o
 -- G.playerValues do Functions é {Title=..., Player=...})
@@ -994,6 +1004,7 @@ TabHome:CreateDropdown({
     value = "Q",
     flag = "AutoParryKey",
     callback = function(option)
+        if not option or option == "" then return end
         local ok, key = pcall(function() return Enum.KeyCode[option] end)
         if ok and key then
             G.AutoParryKey = key
@@ -1115,6 +1126,7 @@ local SpectateDropdown = TabVisual:CreateDropdown({
     placeholder = "Selecione...",
     flag = "SpectateTarget",
     callback = function(option)
+        if not option or option == "" then return end -- autoLoad com player que saiu = nil
         SelectedPlayerToView = Players:FindFirstChild(option)
         G.SpectateTargetName = option
         -- se o highlight já estiver ligado, re-aplica no novo alvo
@@ -1549,6 +1561,7 @@ local TPDropdown = TabTeleport:CreateDropdown({
     placeholder = "Selecione...",
     flag = "TPTarget",
     callback = function(option)
+        if not option or option == "" then return end
         G.LoopTPTarget = option
         if tpDropdownReady then
             G.tpToPlayerName(option)
@@ -1708,7 +1721,10 @@ local OrbitDropdown = TabMisc:CreateDropdown({
     options = getPlayerNames(),
     placeholder = "Selecione...",
     flag = "OrbitTarget",
-    callback = function(option) G.OrbitTarget = option end,
+    callback = function(option)
+        if not option or option == "" then return end
+        G.OrbitTarget = option
+    end,
 })
 
 TabMisc:CreateToggle({
@@ -1739,7 +1755,10 @@ TabMisc:CreateDropdown({
     options = emoteNames,
     placeholder = "Selecione...",
     flag = "Emote",
-    callback = function(option) SelectedEmote = option end,
+    callback = function(option)
+        if not option or option == "" then return end
+        SelectedEmote = option
+    end,
 })
 
 local emoteLoopToggle = TabMisc:CreateToggle({
@@ -1821,6 +1840,7 @@ TabMisc:CreateDropdown({
     placeholder = "Selecione...",
     flag = "TrollAudio",
     callback = function(option)
+        if not option or option == "" then return end
         for _, audio in ipairs(G.TrollAudios or {}) do
             if audio.Title == option then SelectedTrollAudio = audio.id end
         end
@@ -1878,7 +1898,10 @@ local CopyPlayerDropdown = TabUtility:CreateDropdown({
     options = getPlayerNames(),
     placeholder = "Selecione...",
     flag = "CopyTarget",
-    callback = function(option) CopyTargetPlayer = Players:FindFirstChild(option) end,
+    callback = function(option)
+        if not option or option == "" then return end
+        CopyTargetPlayer = Players:FindFirstChild(option)
+    end,
 })
 
 TabUtility:CreateButton({
@@ -2071,7 +2094,10 @@ local DropFlingTarget = TabExploits:CreateDropdown({
     options = getPlayerNames(),
     placeholder = "Selecione...",
     flag = "FlingTarget",
-    callback = function(option) FlingTargetPlayer = Players:FindFirstChild(option) end,
+    callback = function(option)
+        if not option or option == "" then return end
+        FlingTargetPlayer = Players:FindFirstChild(option)
+    end,
 })
 DropFlingTarget:Lock("Em Manutenção")
 
