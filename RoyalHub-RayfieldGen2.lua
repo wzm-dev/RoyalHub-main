@@ -807,6 +807,22 @@ local function getDevName()
 end
 local IS_DEV = getDevName()
 
+-- Adapter de notify: o Functions.lua usa notify() estilo WindUI
+-- (getUI() -> _G.RH_WindUI or _G.RH_UI2). Sem isso TODOS os notifies do
+-- Functions eram silenciosos (join/leave, anti-void, etc).
+_G.RH_UI2 = {
+    Notify = function(props)
+        if not Window or Window.unloaded then return end
+        pcall(function()
+            Window:Notify({
+                title    = props and props.Title or "Royal Hub",
+                content  = props and props.Content or "",
+                duration = props and props.Duration or 3,
+            })
+        end)
+    end,
+}
+
 -- Snapshot do tema ativo no boot: restaura as cores quando o RGB é desligado
 local LastAppliedTheme = {
     WindowColor     = Window.theme.WindowColor,
@@ -1787,11 +1803,12 @@ local ToggleLoopTP = TabTeleport:CreateToggle({
 TabTeleport:CreateSection({ name = "Waypoints" })
 local WaypointDropdown = nil -- (forward: o botão de salvar usa Refresh antes da definição)
 
-local waypointNameInput = TabTeleport:CreateInput({
+local waypointNameText = ""
+TabTeleport:CreateInput({
     name = "Nome do Waypoint",
     placeholder = "ex: farm spot",
     flag = "WaypointName",
-    callback = function(text) end,
+    callback = function(text) waypointNameText = text or "" end,
 })
 
 TabTeleport:CreateButton({
@@ -1800,7 +1817,7 @@ TabTeleport:CreateButton({
     callback = function()
         local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if not root then return end
-        local wpName = Window.Flags and Window.Flags.WaypointName or ""
+        local wpName = waypointNameText
         if not wpName or wpName == "" then
             Window:Notify({ title = "Waypoints", content = "Digite um nome primeiro!", duration = 3 })
             return
@@ -1811,6 +1828,7 @@ TabTeleport:CreateButton({
     end,
 })
 
+local waypointSel = nil
 WaypointDropdown = TabTeleport:CreateDropdown({
     name = "Waypoints Salvos",
     options = G.getWaypointNames(),
@@ -1818,6 +1836,7 @@ WaypointDropdown = TabTeleport:CreateDropdown({
     flag = "WaypointSel",
     callback = function(option)
         if not option or option == "" then return end
+        waypointSel = option
     end,
 })
 
@@ -1825,9 +1844,8 @@ TabTeleport:CreateButton({
     name = "TP até Waypoint",
     description = "Teleporta pro waypoint selecionado.",
     callback = function()
-        local sel = Window.Flags and Window.Flags.WaypointSel
-        if sel and G.Waypoints[sel] then
-            G.tpToWaypoint(sel)
+        if waypointSel and G.Waypoints[waypointSel] then
+            G.tpToWaypoint(waypointSel)
         else
             Window:Notify({ title = "Waypoints", content = "Selecione um waypoint!", duration = 3 })
         end
@@ -1837,11 +1855,11 @@ TabTeleport:CreateButton({
 TabTeleport:CreateButton({
     name = "Deletar Waypoint",
     callback = function()
-        local sel = Window.Flags and Window.Flags.WaypointSel
-        if sel then
-            G.removeWaypoint(sel)
+        if waypointSel then
+            G.removeWaypoint(waypointSel)
+            waypointSel = nil
             WaypointDropdown:Refresh(G.getWaypointNames())
-            Window:Notify({ title = "Waypoints", content = "Deletado: " .. sel, duration = 3 })
+            Window:Notify({ title = "Waypoints", content = "Deletado!", duration = 3 })
         end
     end,
 })
@@ -1851,9 +1869,8 @@ TabTeleport:CreateButton({
     name = "TP Atrás do Alvo",
     description = "Se posiciona atrás do jogador selecionado acima (setup de combo).",
     callback = function()
-        local sel = Window.Flags and Window.Flags.TPTarget
-        if sel then
-            local ok = G.tpBehindTarget(sel)
+        if TPSelTarget then
+            local ok = G.tpBehindTarget(TPSelTarget)
             if not ok then
                 Window:Notify({ title = "Teleporte", content = "Jogador não encontrado!", duration = 3 })
             end
