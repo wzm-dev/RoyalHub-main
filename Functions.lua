@@ -792,6 +792,7 @@ function G.toggleAimbot(mode)
     if enabled then
         G.AimbotConns[mode] = S.Run.Heartbeat:Connect(function()
             local t = getClosestTarget()
+            G.CurrentAimTarget = t -- indicador lê daqui
             if not t then return end
             local cam  = workspace.CurrentCamera
             local part = t.Character and t.Character:FindFirstChild(G.TargetPart)
@@ -2651,6 +2652,262 @@ function G.quickReset()
 end
 
 ------------------------------------------------------------------------
+-- ANTI-VOID (cai do mapa -> volta pra última posição no chão)
+------------------------------------------------------------------------
+G.AntiVoidEnabled = false; G.AntiVoidY = -50; G.AntiVoidConn = nil
+G._LastGroundPos = nil; G._VoidCooldown = 0
+
+function G.toggleAntiVoid(enabled)
+    G.AntiVoidEnabled = enabled
+    if G.AntiVoidConn then G.AntiVoidConn:Disconnect() G.AntiVoidConn = nil end
+    if not enabled then return end
+    G.AntiVoidConn = S.Run.Heartbeat:Connect(function()
+        local char = LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local hum  = char and char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum then return end
+        -- registra posição no chão (não durante fly/pulo)
+        if hum.FloorMaterial ~= Enum.Material.Air and not G.FlyEnabled then
+            G._LastGroundPos = root.Position
+        end
+        -- caiu pro void?
+        if root.Position.Y < G.AntiVoidY and G._LastGroundPos then
+            if tick() - G._VoidCooldown < 2 then return end -- anti-loop
+            G._VoidCooldown = tick()
+            root.CFrame = CFrame.new(G._LastGroundPos + Vector3.new(0, 3, 0))
+            notify("Anti-Void", "Você caiu do mapa — reposicionado!", 3, "solar:shield-bold")
+        end
+    end)
+end
+
+function G.setAntiVoidY(v) G.AntiVoidY = v end
+
+------------------------------------------------------------------------
+-- FPS BOOSTER (texturas/partículas/decals/shadows OFF, com restore total)
+------------------------------------------------------------------------
+G.FpsBoostEnabled = false; G._FpsRestore = {}; G._FpsParts = 0
+
+function G.toggleFpsBoost(enabled)
+    G.FpsBoostEnabled = enabled
+    -- restore se desligando
+    if not enabled then
+        local L = game:GetService("Lighting")
+        for k, v in pairs(G._FpsRestore) do
+            pcall(function() L[k] = v end)
+        end
+        pcall(function()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Texture") or obj:IsA("Decal") then
+                    obj.Transparency = 0
+                elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                    obj.Enabled = true
+                elseif obj:IsA("BasePart") and obj:IsA("MeshPart") then
+                    -- material já tratado abaixo
+                end
+            end
+        end)
+        -- restaura materiais
+        pcall(function()
+            for part, mat in pairs(G._FpsRestore._mats or {}) do
+                part.Material = mat
+            end
+        end)
+        G._FpsRestore = {}
+        notify("FPS Boost", "Restaurado.", 2, "x")
+        return
+    end
+
+    -- ligando: salva e stripa
+    local L = game:GetService("Lighting")
+    G._FpsRestore = {
+        GlobalShadows = L.GlobalShadows,
+        FogEnd       = L.FogEnd,
+        FogStart     = L.FogStart,
+        Brightness   = L.Brightness,
+        Technology   = L.Technology,
+    }
+    pcall(function() L.GlobalShadows = false end)
+    pcall(function() L.FogEnd = 9e9; L.FogStart = 9e9 end)
+    pcall(function() L.Brightness = 1 end)
+    pcall(function() L.Technology = Enum.Technology.Compatibility end)
+
+    local mats = {}
+    G._FpsRestore._mats = mats
+    local myChar = LP.Character
+    local count = 0
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Texture") or obj:IsA("Decal") then
+            obj.Transparency = 1
+            count += 1
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+            obj.Enabled = false
+            count += 1
+        elseif obj:IsA("BasePart") and obj:IsA("MeshPart") and obj.TextureID ~= "" then
+            if not (myChar and obj:IsDescendantOf(myChar)) then
+                mats[obj] = obj.Material
+                obj.Material = Enum.Material.SmoothPlastic
+                count += 1
+            end
+        end
+        if count > 20000 then break end -- segurança pra mapas gigantes
+    end
+    G._FpsParts = count
+    -- qualidade gráfica mínima
+    pcall(function() settings().Rendering.QualityLevel = 1 end)
+    notify("FPS Boost", "Ativado! " .. count .. " objetos otimizados.", 3, "solar:rocket-bold")
+end
+
+------------------------------------------------------------------------
+-- WAYPOINTS (salva posições nomeadas -> TP de volta)
+------------------------------------------------------------------------
+G.Waypoints = {}
+
+function G.addWaypoint(name, pos)
+    if not name or name == "" then return false end
+    G.Waypoints[name] = pos
+    return true
+end
+
+function G.removeWaypoint(name)
+    G.Waypoints[name] = nil
+end
+
+function G.getWaypointNames()
+    local names = {}
+    for name in pairs(G.Waypoints) do table.insert(names, name) end
+    table.sort(names)
+    return names
+end
+
+function G.tpToWaypoint(name)
+    local pos = G.Waypoints[name]
+    if not pos then return false end
+    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+        return true
+    end
+    return false
+end
+
+function G.tpBehindTarget(name)
+    local t = S.Players:FindFirstChild(name)
+    if not t or not t.Character then return false end
+    local tr = t.Character:FindFirstChild("HumanoidRootPart")
+    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not tr or not root then return false end
+    -- 3 studs ATRÁS do alvo (na direção contrária ao olhar dele)
+    root.CFrame = tr.CFrame * CFrame.new(0, 0, 3)
+    return true
+end
+
+------------------------------------------------------------------------
+-- AIM LOCK INDICATOR (mostra em quem o aimbot travou)
+------------------------------------------------------------------------
+G.AimLockIndicatorEnabled = false; G._AimIndText = nil; G._AimIndConn = nil
+
+function G.toggleAimLockIndicator(enabled)
+    G.AimLockIndicatorEnabled = enabled
+    if G._AimIndConn then G._AimIndConn:Disconnect() G._AimIndConn = nil end
+    if G._AimIndText then pcall(function() G._AimIndText:Remove() end) G._AimIndText = nil end
+    if not enabled then
+        -- expõe pro aimbot parar de reportar
+        G.CurrentAimTarget = nil
+        return
+    end
+    local ok, txt = pcall(Drawing.new, "Text")
+    if not ok then return end
+    txt.Size = 15
+    txt.Center = false
+    txt.Outline = true
+    txt.Color = Color3.fromRGB(255, 80, 80)
+    txt.Position = Vector2.new(16, 60)
+    txt.Visible = false
+    G._AimIndText = txt
+    G._AimIndConn = S.Run.RenderStepped:Connect(function()
+        local t = G.CurrentAimTarget
+        if t and t.Parent and t.Character then
+            local hum = t.Character:FindFirstChildOfClass("Humanoid")
+            local root = t.Character:FindFirstChild("HumanoidRootPart")
+            if hum and root and hum.Health > 0 then
+                local dist = math.floor((workspace.CurrentCamera.CFrame.Position - root.Position).Magnitude)
+                txt.Text = "🎯 " .. t.Name .. " (" .. dist .. "m)"
+                txt.Visible = true
+                return
+            end
+        end
+        txt.Visible = false
+    end)
+end
+
+------------------------------------------------------------------------
+-- JOIN/LEAVE LOGGER
+------------------------------------------------------------------------
+G.JoinLeaveLogEnabled = false; G._JoinLeaveConns = {}
+
+function G.toggleJoinLeaveLog(enabled)
+    G.JoinLeaveLogEnabled = enabled
+    for _, c in pairs(G._JoinLeaveConns) do pcall(function() c:Disconnect() end) end
+    G._JoinLeaveConns = {}
+    if not enabled then return end
+    table.insert(G._JoinLeaveConns, S.Players.PlayerAdded:Connect(function(p)
+        if G.JoinLeaveLogEnabled then
+            notify("Entrou", p.Name .. " entrou no servidor.", 3, "solar:user-plus-bold")
+        end
+    end))
+    table.insert(G._JoinLeaveConns, S.Players.PlayerRemoving:Connect(function(p)
+        if G.JoinLeaveLogEnabled then
+            notify("Saiu", p.Name .. " saiu do servidor.", 3, "solar:user-minus-bold")
+        end
+    end))
+end
+
+------------------------------------------------------------------------
+-- CHAT SPAMMER (com guard anti-flood: delay mínimo 0.4s)
+------------------------------------------------------------------------
+G.ChatSpamEnabled = false; G.ChatSpamMessage = ""; G.ChatSpamDelay = 1; G._ChatSpamThread = nil
+
+function G.toggleChatSpam(enabled)
+    G.ChatSpamEnabled = enabled
+    if G._ChatSpamThread then
+        pcall(function() coroutine.close(G._ChatSpamThread) end)
+        G._ChatSpamThread = nil
+    end
+    if not enabled then return end
+    if not G.ChatSpamMessage or G.ChatSpamMessage == "" then
+        notify("Chat Spammer", "Defina uma mensagem primeiro!", 3, "alert-circle")
+        G.ChatSpamEnabled = false
+        return
+    end
+    task.spawn(function()
+        while G.ChatSpamEnabled do
+            pcall(function()
+                -- TextChatService (novo): manda de verdade pro server
+                local TCS = game:GetService("TextChatService")
+                local channel = TCS.TextChannels and TCS.TextChannels:FindFirstChild("RBXGeneral")
+                if TCS.ChatVersion == Enum.ChatVersion.TextChatService and channel then
+                    local ok = pcall(function()
+                        channel:SendAsync(G.ChatSpamMessage)
+                    end)
+                    if ok then return end -- enviado, não tenta legacy
+                end
+                -- legacy SayMessageRequest (jogos antigos)
+                local RS = game:GetService("ReplicatedStorage")
+                local ev = RS:FindFirstChild("DefaultChatSystemChatEvents")
+                if ev then
+                    local say = ev:FindFirstChild("SayMessageRequest")
+                    if say then say:FireServer(G.ChatSpamMessage, "All") end
+                end
+            end)
+            task.wait(math.max(G.ChatSpamDelay or 1, 0.4)) -- anti-flood guard
+        end
+    end)
+end
+
+function G.setChatSpamMessage(msg) G.ChatSpamMessage = msg end
+function G.setChatSpamDelay(v) G.ChatSpamDelay = math.max(v, 0.4) end
+
+------------------------------------------------------------------------
 -- UNLOAD ALL — usado ao ejetar o script: desliga tudo e reverte
 ------------------------------------------------------------------------
 function G.unloadAll()
@@ -2705,6 +2962,11 @@ function G.unloadAll()
     pcall(function() G.toggleEspBox(false) end)
     pcall(function() G.toggleEspHealth(false) end)
     pcall(function() G.toggleEspInfo(false) end)
+    pcall(function() G.toggleAntiVoid(false) end)
+    pcall(function() G.toggleFpsBoost(false) end)
+    pcall(function() G.toggleAimLockIndicator(false) end)
+    pcall(function() G.toggleJoinLeaveLog(false) end)
+    pcall(function() G.toggleChatSpam(false) end)
     pcall(function() G.toggleSpyChat(false) end)
     pcall(function() G.stopTrollAudio() end)
     pcall(function() G.toggleMapInvisible(false) end)

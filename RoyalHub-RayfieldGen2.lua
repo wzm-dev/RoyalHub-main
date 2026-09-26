@@ -979,6 +979,13 @@ TabHome:CreateColorPicker({
 })
 
 TabHome:CreateToggle({
+    name = "Aim Lock Indicator",
+    description = "Mostra em quem o aimbot está travado (canto da tela).",
+    flag = "AimLockIndicator",
+    callback = function(state) G.toggleAimLockIndicator(state) end,
+})
+
+TabHome:CreateToggle({
     name = "Ignorar Aliados (Team Check)",
     value = true,
     flag = "TeamCheck",
@@ -1482,6 +1489,30 @@ TabPersonagem:CreateToggle({
 })
 
 TabPersonagem:CreateToggle({
+    name = "Anti-Void",
+    description = "Caiu do mapa? Volta sozinho pra última posição no chão.",
+    flag = "AntiVoid",
+    callback = function(state) G.toggleAntiVoid(state) end,
+})
+
+TabPersonagem:CreateSlider({
+    name = "Anti-Void Y",
+    description = "Altura que conta como void (padrão -50).",
+    range = { -500, -10 },
+    increment = 10,
+    value = -50,
+    flag = "AntiVoidY",
+    callback = function(value) G.setAntiVoidY(value) end,
+})
+
+TabPersonagem:CreateToggle({
+    name = "FPS Booster",
+    description = "Remove texturas, partículas e sombras (com restore total).",
+    flag = "FpsBoost",
+    callback = function(state) G.toggleFpsBoost(state) end,
+})
+
+TabPersonagem:CreateToggle({
     name = "Sprint (LeftShift)",
     description = "Segure LeftShift para correr com velocidade turbo.",
     flag = "Sprint",
@@ -1752,6 +1783,86 @@ local ToggleLoopTP = TabTeleport:CreateToggle({
     callback = function(state) G.toggleLoopTP(state) end,
 })
 
+-- ===== WAYPOINTS =====
+TabTeleport:CreateSection({ name = "Waypoints" })
+local WaypointDropdown = nil -- (forward: o botão de salvar usa Refresh antes da definição)
+
+local waypointNameInput = TabTeleport:CreateInput({
+    name = "Nome do Waypoint",
+    placeholder = "ex: farm spot",
+    flag = "WaypointName",
+    callback = function(text) end,
+})
+
+TabTeleport:CreateButton({
+    name = "Salvar Posição Atual",
+    description = "Salva onde você está com o nome digitado acima.",
+    callback = function()
+        local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local wpName = Window.Flags and Window.Flags.WaypointName or ""
+        if not wpName or wpName == "" then
+            Window:Notify({ title = "Waypoints", content = "Digite um nome primeiro!", duration = 3 })
+            return
+        end
+        G.addWaypoint(wpName, root.Position)
+        WaypointDropdown:Refresh(G.getWaypointNames())
+        Window:Notify({ title = "Waypoints", content = "Salvo: " .. wpName, duration = 3 })
+    end,
+})
+
+WaypointDropdown = TabTeleport:CreateDropdown({
+    name = "Waypoints Salvos",
+    options = G.getWaypointNames(),
+    placeholder = "Selecione...",
+    flag = "WaypointSel",
+    callback = function(option)
+        if not option or option == "" then return end
+    end,
+})
+
+TabTeleport:CreateButton({
+    name = "TP até Waypoint",
+    description = "Teleporta pro waypoint selecionado.",
+    callback = function()
+        local sel = Window.Flags and Window.Flags.WaypointSel
+        if sel and G.Waypoints[sel] then
+            G.tpToWaypoint(sel)
+        else
+            Window:Notify({ title = "Waypoints", content = "Selecione um waypoint!", duration = 3 })
+        end
+    end,
+})
+
+TabTeleport:CreateButton({
+    name = "Deletar Waypoint",
+    callback = function()
+        local sel = Window.Flags and Window.Flags.WaypointSel
+        if sel then
+            G.removeWaypoint(sel)
+            WaypointDropdown:Refresh(G.getWaypointNames())
+            Window:Notify({ title = "Waypoints", content = "Deletado: " .. sel, duration = 3 })
+        end
+    end,
+})
+
+-- ===== TP ATRÁS DO ALVO =====
+TabTeleport:CreateButton({
+    name = "TP Atrás do Alvo",
+    description = "Se posiciona atrás do jogador selecionado acima (setup de combo).",
+    callback = function()
+        local sel = Window.Flags and Window.Flags.TPTarget
+        if sel then
+            local ok = G.tpBehindTarget(sel)
+            if not ok then
+                Window:Notify({ title = "Teleporte", content = "Jogador não encontrado!", duration = 3 })
+            end
+        else
+            Window:Notify({ title = "Teleporte", content = "Selecione um jogador primeiro!", duration = 3 })
+        end
+    end,
+})
+
 TabTeleport:CreateSlider({
     name = "Delay entre TPs",
     description = "Tempo em segundos entre cada teleporte (menor = mais rápido)",
@@ -1889,6 +2000,40 @@ local ToggleSpin = TabMisc:CreateToggle({
     description = "Faz o personagem girar infinitamente.",
     flag = "Spin",
     callback = function(state) G.toggleSpin(state) end,
+})
+
+TabMisc:CreateToggle({
+    name = "Join/Leave Logger",
+    description = "Avisa quando alguém entra ou sai do servidor.",
+    flag = "JoinLeaveLog",
+    callback = function(state) G.toggleJoinLeaveLog(state) end,
+})
+
+-- ===== CHAT SPAMMER =====
+TabMisc:CreateSection({ name = "Chat Spammer" })
+
+local SpamInput = TabMisc:CreateInput({
+    name = "Mensagem",
+    placeholder = "digite a mensagem...",
+    flag = "SpamMessage",
+    callback = function(text) G.setChatSpamMessage(text) end,
+})
+
+TabMisc:CreateSlider({
+    name = "Delay do Spam",
+    description = "Segundos entre mensagens (mínimo 0.4).",
+    range = { 0.4, 5 },
+    increment = 0.1,
+    value = 1,
+    flag = "SpamDelay",
+    callback = function(value) G.setChatSpamDelay(value) end,
+})
+
+TabMisc:CreateToggle({
+    name = "Ativar Spam",
+    description = "Envia a mensagem no chat em loop.",
+    flag = "ChatSpam",
+    callback = function(state) G.toggleChatSpam(state) end,
 })
 
 local OrbitDropdown = TabMisc:CreateDropdown({
