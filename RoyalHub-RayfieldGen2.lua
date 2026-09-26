@@ -1084,6 +1084,29 @@ TabVisual:CreateToggle({
 })
 
 TabVisual:CreateToggle({
+    name = "ESP Bones",
+    description = "Desenha o esqueleto dos inimigos (juntas conectadas, R6 e R15).",
+    flag = "EspBones",
+    callback = function(state) G.toggleEspBones(state) end,
+})
+
+TabVisual:CreateColorPicker({
+    name = "Bones Cor",
+    color = Color3.fromRGB(255, 255, 255),
+    flag = "EspBonesColor",
+    callback = function(color) G.setEspBonesColor(color) end,
+})
+
+TabVisual:CreateSlider({
+    name = "Bones Espessura",
+    range = { 1, 4 },
+    increment = 1,
+    value = 1,
+    flag = "EspBonesWidth",
+    callback = function(value) G.setEspBonesWidth(value) end,
+})
+
+TabVisual:CreateToggle({
     name = "Chams",
     description = "Inimigos com material ForceField colorido (atravessa paredes).",
     flag = "Chams",

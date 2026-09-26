@@ -1568,6 +1568,121 @@ end)
 -- NOVAS FUNÇÕES CHEAT
 ------------------------------------------------------------------------
 
+------------------------------------------------------------------------
+-- ESP BONES (esqueleto: linhas entre as juntas do rig, R6 e R15)
+------------------------------------------------------------------------
+G.EspBonesEnabled   = false
+G.EspBonesConn     = nil
+G.EspBonesColor    = Color3.fromRGB(255, 255, 255)
+G.EspBonesWidth    = 1
+G._EspBonesByPlayer = {}   -- [player] = {lines...} (1 Drawing por linha, cacheado)
+
+-- pares de juntas por rig type
+local BONES_R15 = {
+    {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
+}
+local BONES_R6 = {
+    {"Head", "Torso"},
+    {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+    {"Torso", "Left Leg"}, {"Torso", "Right Leg"},
+}
+
+local function _bonesRemove(p)
+    if G._EspBonesByPlayer[p] then
+        for _, l in pairs(G._EspBonesByPlayer[p]) do pcall(function() l:Remove() end) end
+        G._EspBonesByPlayer[p] = nil
+    end
+end
+
+function G.toggleEspBones(enabled)
+    G.EspBonesEnabled = enabled
+    if G.EspBonesConn then G.EspBonesConn:Disconnect() G.EspBonesConn = nil end
+    for p in pairs(G._EspBonesByPlayer) do _bonesRemove(p) end
+    if not enabled then return end
+
+    G.EspBonesConn = S.Run.RenderStepped:Connect(function()
+        local cam = workspace.CurrentCamera
+        for _, p in ipairs(S.Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if not (hum and hum.Health > 0) then
+                    _bonesRemove(p)
+                else
+                    local rig = hum.RigType
+                    local pairsList = if rig == Enum.HumanoidRigType.R6 then BONES_R6 else BONES_R15
+                    -- pega/cacheia as linhas
+                    local lines = G._EspBonesByPlayer[p]
+                    if not lines then
+                        lines = {}
+                        G._EspBonesByPlayer[p] = lines
+                    end
+                    for i, pair in ipairs(pairsList) do
+                        local a = p.Character:FindFirstChild(pair[1])
+                        local b = p.Character:FindFirstChild(pair[2])
+                        local line = lines[i]
+                        if a and b then
+                            if not line then
+                                local ok, l = pcall(Drawing.new, "Line")
+                                if ok then line = l; lines[i] = l end
+                            end
+                            if line then
+                                local sa, oa = cam:WorldToViewportPoint(a.Position)
+                                local sb, ob = cam:WorldToViewportPoint(b.Position)
+                                if oa and ob then
+                                    line.Visible   = true
+                                    line.From      = Vector2.new(sa.X, sa.Y)
+                                    line.To        = Vector2.new(sb.X, sb.Y)
+                                    line.Color     = G.EspBonesColor
+                                    line.Thickness = G.EspBonesWidth
+                                    line.Transparency = 0.2
+                                else
+                                    line.Visible = false
+                                end
+                            end
+                        elseif line then
+                            line.Visible = false
+                        end
+                    end
+                end
+            else
+                _bonesRemove(p)
+            end
+        end
+    end)
+
+    -- limpeza quando player sai
+    if not G._EspBonesRemoveConn then
+        G._EspBonesRemoveConn = S.Players.PlayerRemoving:Connect(_bonesRemove)
+    end
+end
+
+function G.setEspBonesColor(c)  G.EspBonesColor = c end
+function G.setEspBonesWidth(v)  G.EspBonesWidth = v end
+
+------------------------------------------------------------------------
+-- CLIQUE ESQUERDO que funciona: VirtualInputManager > mouse1click > keypress
+-- (keypress(1) não funciona pra mouse na maioria dos executores — era o bug)
+local function _clickLeftMouse()
+    local ok = pcall(function()
+        local VIM = game:GetService("VirtualInputManager")
+        local pos = S.UI:GetMouseLocation()
+        VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+        task.wait(0.01)
+        VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+    end)
+    if ok then return true end
+    if mouse1click then
+        local ok2 = pcall(mouse1click)
+        if ok2 then return true end
+    end
+    pcall(function() keypress(1) task.wait(0.01) keyrelease(1) end)
+    return false
+end
+
 -- TRIGGER BOT: atira automaticamente quando o crosshair está sobre um inimigo
 G.TriggerBotEnabled = false; G.TriggerBotDelay = 0.1; G.TriggerBotConn = nil
 
@@ -1575,34 +1690,31 @@ function G.toggleTriggerBot(enabled)
     G.TriggerBotEnabled = enabled
     if G.TriggerBotConn then G.TriggerBotConn:Disconnect() G.TriggerBotConn = nil end
     if enabled then
+        local lastClick = 0
         G.TriggerBotConn = S.Run.Heartbeat:Connect(function()
+            -- cooldown real (antes cliqueteava 60x/s sem esperar o delay)
+            if tick() - lastClick < (G.TriggerBotDelay or 0.1) then return end
             local cam = workspace.CurrentCamera
             local myChar = LP.Character
             local myTeam = LP.Team
-            -- raycast do centro exato da tela (direção da câmera)
-            local hit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * G.MaxDistance, nil)
-            if hit and myChar then
-                local inst = hit.Instance
-                if inst and not inst:IsDescendantOf(myChar) then
-                    -- de quem é essa parte?
-                    for _, p in ipairs(S.Players:GetPlayers()) do
-                        if p ~= LP and p.Character and inst:IsDescendantOf(p.Character) then
-                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                            local isAlly = G.UseTeamCheck and myTeam and (p.Team == myTeam)
-                            if hum and hum.Health > 0 and not isAlly then
-                                pcall(function()
-                                    keypress(1)            -- mouse1
-                                    task.wait(G.TriggerBotDelay or 0.1)
-                                    keyrelease(1)
-                                end)
-                            end
-                            break
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Exclude
+            rp.FilterDescendantsInstances = {myChar}
+            local hit = workspace:Raycast(cam.CFrame.Position, cam.CFrame.LookVector * G.MaxDistance, rp)
+            if hit and hit.Instance then
+                for _, p in ipairs(S.Players:GetPlayers()) do
+                    if p ~= LP and p.Character and hit.Instance:IsDescendantOf(p.Character) then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local isAlly = G.UseTeamCheck and myTeam and (p.Team == myTeam)
+                        if hum and hum.Health > 0 and not isAlly then
+                            lastClick = tick()
+                            _clickLeftMouse()
                         end
+                        break
                     end
                 end
             end
         end)
-    else
     end
 end
 
@@ -1617,24 +1729,12 @@ function G.toggleAutoClicker(enabled)
     G.AutoClickerEnabled = enabled
     if G.AutoClickerConn then G.AutoClickerConn:Disconnect() G.AutoClickerConn = nil end
     if enabled then
-        local clicking = false
-        G.AutoClickerConn = S.Run.Heartbeat:Connect(function()
-            if clicking or not G.AutoClickerEnabled then return end
-            clicking = true
-            task.spawn(function()
-                while G.AutoClickerEnabled do
-                    local ok = pcall(function()
-                        keypress(1)
-                        task.wait(0.01)
-                        keyrelease(1)
-                    end)
-                    if not ok then break end
-                    task.wait(1 / math.max(G.AutoClickerCPS, 1))
-                end
-                clicking = false
-            end)
+        task.spawn(function()
+            while G.AutoClickerEnabled do
+                _clickLeftMouse()
+                task.wait(1 / math.max(G.AutoClickerCPS or 10, 1))
+            end
         end)
-    else
     end
 end
 
@@ -2041,6 +2141,7 @@ function G.unloadAll()
     pcall(function() G.toggleTargetHighlight(false) end)
     pcall(function() G.toggleChams(false) end)
     pcall(function() G.toggleBTools(false) end)
+    pcall(function() G.toggleEspBones(false) end)
     pcall(function() G.toggleMapInvisible(false) end)
 
     -- 2) estado que não tem toggle off dedicado
