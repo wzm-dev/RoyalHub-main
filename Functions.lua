@@ -1774,6 +1774,297 @@ function G.setCamFOV(v)
 end
 
 ------------------------------------------------------------------------
+-- SPRINT (LeftShift = velocidade turbo enquanto pressionado)
+------------------------------------------------------------------------
+G.SprintEnabled = false; G.SprintSpeed = 32; G.SprintConn = nil; G.SprintBase = nil
+
+function G.toggleSprint(enabled)
+    G.SprintEnabled = enabled
+    if G.SprintConn then G.SprintConn:Disconnect() G.SprintConn = nil end
+    if enabled then
+        G.SprintConn = S.Run.Heartbeat:Connect(function()
+            local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+            if not hum then return end
+            if S.UI:IsKeyDown(Enum.KeyCode.LeftShift) then
+                if not G.SprintBase then G.SprintBase = hum.WalkSpeed end
+                hum.WalkSpeed = G.SprintSpeed
+            else
+                if G.SprintBase then hum.WalkSpeed = G.SprintBase end
+            end
+        end)
+    else
+        -- restaura
+        local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+        if hum and G.SprintBase then hum.WalkSpeed = G.SprintBase end
+        G.SprintBase = nil
+    end
+end
+
+function G.setSprintSpeed(v) G.SprintSpeed = v end
+
+------------------------------------------------------------------------
+-- THIRD PERSON FORÇADO (trava a câmera em 3ª pessoa)
+------------------------------------------------------------------------
+G.ThirdPersonEnabled = false; G.ThirdPersonOffset = 12
+
+function G.toggleThirdPerson(enabled)
+    G.ThirdPersonEnabled = enabled
+    local ok = pcall(function()
+        LP.CameraMode = Enum.CameraMode.Classic
+        LP.CameraMaxZoomDistance = 400
+        LP.CameraMinZoomDistance = enabled and G.ThirdPersonOffset or 0.5
+        if enabled then
+            LP.CameraMaxZoomDistance = math.max(G.ThirdPersonOffset, 12)
+        else
+            LP.CameraMaxZoomDistance = 400
+            LP.CameraMinZoomDistance = 0.5
+        end
+    end)
+    if not ok then
+        notify("Third Person", "Não suportado neste jogo.", 3, "x")
+    end
+end
+
+function G.setThirdPersonOffset(v)
+    G.ThirdPersonOffset = v
+    if G.ThirdPersonEnabled then
+        pcall(function()
+            LP.CameraMinZoomDistance = v
+            LP.CameraMaxZoomDistance = math.max(v, 12)
+        end)
+    end
+end
+
+------------------------------------------------------------------------
+-- HIGHLIGHT NO ALVO (Highlight custom no jogador selecionado)
+------------------------------------------------------------------------
+G.TargetHighlightEnabled = false; G.TargetHighlight = nil
+G.TargetHighlightColor = Color3.fromRGB(255, 80, 80)
+
+function G.toggleTargetHighlight(enabled)
+    G.TargetHighlightEnabled = enabled
+    if G.TargetHighlight then G.TargetHighlight:Destroy() G.TargetHighlight = nil end
+    if enabled then
+        if not G.SpectateTargetName then
+            notify("Highlight", "Selecione um player primeiro (aba Visual)!", 3, "alert-circle")
+            G.TargetHighlightEnabled = false
+            return
+        end
+        local t = S.Players:FindFirstChild(G.SpectateTargetName)
+        if t and t.Character then
+            local hl = Instance.new("Highlight")
+            hl.Adornee = t.Character
+            hl.FillColor = G.TargetHighlightColor
+            hl.FillTransparency = 0.5
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            hl.Parent = t.Character
+            G.TargetHighlight = hl
+        end
+    end
+end
+
+function G.setTargetHighlightColor(c)
+    G.TargetHighlightColor = c
+    if G.TargetHighlight then G.TargetHighlight.FillColor = c end
+end
+
+------------------------------------------------------------------------
+-- CHAMS SIMPLES (materiais ForceField coloridos em todos os inimigos)
+------------------------------------------------------------------------
+G.ChamsEnabled = false; G.ChamsColor = Color3.fromRGB(0, 255, 170)
+G._ChamsOrig = {}
+
+function G.toggleChams(enabled)
+    G.ChamsEnabled = enabled
+    local function applyChar(char)
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                if enabled then
+                    if not G._ChamsOrig[part] then G._ChamsOrig[part] = part.Material end
+                    part.Material = Enum.Material.ForceField
+                    if part:FindFirstChild("RH_ChamsTint") == nil then
+                        local t = part:FindFirstChildOfClass("Texture") or part
+                        part.Color = G.ChamsColor
+                    end
+                else
+                    part.Material = G._ChamsOrig[part] or part.Material
+                    G._ChamsOrig[part] = nil
+                end
+            end
+        end
+    end
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p ~= LP and p.Character then applyChar(p.Character) end
+    end
+    if not enabled then G._ChamsOrig = {} end
+end
+
+------------------------------------------------------------------------
+-- CUSTOM BG (fundo animado atrás do hub — partículas em ScreenGui)
+------------------------------------------------------------------------
+G.CustomBgEnabled = false; G.CustomBgGui = nil; G.CustomBgColor = Color3.fromRGB(130, 90, 255)
+G.CustomBgSpeed  = 1
+
+function G.toggleCustomBg(enabled)
+    G.CustomBgEnabled = enabled
+    if G.CustomBgGui then G.CustomBgGui:Destroy() G.CustomBgGui = nil end
+    if not enabled then return end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "RoyalHubBG"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = -10          -- fica ATRÁS do hub
+    local ok = pcall(function() gui.Parent = game:GetService("CoreGui") end)
+    if not ok then gui.Parent = LP:WaitForChild("PlayerGui") end
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
+    frame.BackgroundTransparency = 0.25
+    frame.BorderSizePixel = 0
+    frame.Parent = gui
+
+    -- gradiente animado
+    local grad = Instance.new("UIGradient")
+    grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0,   G.CustomBgColor),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 12, 40)),
+        ColorSequenceKeypoint.new(1,   G.CustomBgColor),
+    })
+    grad.Rotation = 45
+    grad.Parent = frame
+
+    -- partículas: quadradinhos flutuando
+    local parts = {}
+    for i = 1, 24 do
+        local p = Instance.new("Frame")
+        p.Size = UDim2.fromOffset(math.random(2, 5), math.random(2, 5))
+        p.Position = UDim2.fromScale(math.random(), math.random())
+        p.BackgroundColor3 = G.CustomBgColor
+        p.BackgroundTransparency = math.random(30, 70) / 100
+        p.BorderSizePixel = 0
+        p.Rotation = math.random(0, 360)
+        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+        p.Parent = frame
+        table.insert(parts, p)
+    end
+
+    -- loop de animação
+    task.spawn(function()
+        while G.CustomBgEnabled and gui.Parent do
+            local dt = task.wait(0.03)
+            grad.Rotation = (grad.Rotation + 12 * dt * G.CustomBgSpeed) % 360
+            for _, p in ipairs(parts) do
+                if p.Parent then
+                    local x = p.Position.X.Scale + (math.random(-10, 10) / 1000) * G.CustomBgSpeed
+                    local y = p.Position.Y.Scale - (math.random(1, 8) / 1000) * G.CustomBgSpeed
+                    if y < -0.05 then y = 1.05 end
+                    p.Position = UDim2.fromScale(x, y)
+                end
+            end
+        end
+    end)
+
+    G.CustomBgGui = gui
+end
+
+function G.setCustomBgColor(c)
+    G.CustomBgColor = c
+    if G.CustomBgGui then
+        -- recria com a cor nova (jeito simples e seguro)
+        G.toggleCustomBg(false)
+        G.toggleCustomBg(true)
+    end
+end
+
+function G.setCustomBgSpeed(v)
+    G.CustomBgSpeed = v
+end
+
+------------------------------------------------------------------------
+-- CUSTOM BG (fundo animado atrás do hub — partículas em ScreenGui)
+------------------------------------------------------------------------
+G.CustomBgEnabled = false; G.CustomBgGui = nil; G.CustomBgColor = Color3.fromRGB(130, 90, 255)
+G.CustomBgSpeed  = 1
+
+function G.toggleCustomBg(enabled)
+    G.CustomBgEnabled = enabled
+    if G.CustomBgGui then G.CustomBgGui:Destroy() G.CustomBgGui = nil end
+    if not enabled then return end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "RoyalHubBG"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = -10          -- fica ATRÁS do hub
+    local ok = pcall(function() gui.Parent = game:GetService("CoreGui") end)
+    if not ok then gui.Parent = LP:WaitForChild("PlayerGui") end
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
+    frame.BackgroundTransparency = 0.25
+    frame.BorderSizePixel = 0
+    frame.Parent = gui
+
+    -- gradiente animado
+    local grad = Instance.new("UIGradient")
+    grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0,   G.CustomBgColor),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 12, 40)),
+        ColorSequenceKeypoint.new(1,   G.CustomBgColor),
+    })
+    grad.Rotation = 45
+    grad.Parent = frame
+
+    -- partículas: bolinhas flutuando
+    local parts = {}
+    for i = 1, 24 do
+        local p = Instance.new("Frame")
+        p.Size = UDim2.fromOffset(math.random(2, 5), math.random(2, 5))
+        p.Position = UDim2.fromScale(math.random(), math.random())
+        p.BackgroundColor3 = G.CustomBgColor
+        p.BackgroundTransparency = math.random(30, 70) / 100
+        p.BorderSizePixel = 0
+        p.Rotation = math.random(0, 360)
+        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+        p.Parent = frame
+        table.insert(parts, p)
+    end
+
+    -- loop de animação
+    task.spawn(function()
+        while G.CustomBgEnabled and gui.Parent do
+            local dt = task.wait(0.03)
+            grad.Rotation = (grad.Rotation + 12 * dt * G.CustomBgSpeed) % 360
+            for _, p in ipairs(parts) do
+                if p.Parent then
+                    local x = p.Position.X.Scale + (math.random(-10, 10) / 1000) * G.CustomBgSpeed
+                    local y = p.Position.Y.Scale - (math.random(1, 8) / 1000) * G.CustomBgSpeed
+                    if y < -0.05 then y = 1.05 end
+                    p.Position = UDim2.fromScale(x, y)
+                end
+            end
+        end
+    end)
+
+    G.CustomBgGui = gui
+end
+
+function G.setCustomBgColor(c)
+    G.CustomBgColor = c
+    if G.CustomBgEnabled then
+        -- recria com a cor nova (jeito simples e seguro)
+        G.toggleCustomBg(false)
+        G.toggleCustomBg(true)
+    end
+end
+
+function G.setCustomBgSpeed(v)
+    G.CustomBgSpeed = v
+end
+
+------------------------------------------------------------------------
 -- UNLOAD ALL — usado ao ejetar o script: desliga tudo e reverte
 ------------------------------------------------------------------------
 function G.unloadAll()
@@ -1819,6 +2110,11 @@ function G.unloadAll()
     pcall(function() G.toggleJumpLock(false) end)
     pcall(function() G.toggleAutoRespawn(false) end)
     pcall(function() G.toggleInventoryWebhook(false) end)
+    pcall(function() G.toggleSprint(false) end)
+    pcall(function() G.toggleThirdPerson(false) end)
+    pcall(function() G.toggleTargetHighlight(false) end)
+    pcall(function() G.toggleChams(false) end)
+    pcall(function() G.toggleCustomBg(false) end)
 
     -- 2) estado que não tem toggle off dedicado
     G.SpinEnabled = false

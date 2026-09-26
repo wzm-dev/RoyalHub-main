@@ -298,7 +298,7 @@ local Window = Rayfield:CreateWindow({
         fileName     = "RoyalHub_Config",
         customFolder = "RoyalHub",
     },
-    locale = "pt-br",
+    -- locale: SEM prop = auto-detecta o idioma do Roblox do jogador
     translations = {
         ["pt-br"] = {
             -- Strings internas do Rayfield (Settings/Configurations)
@@ -328,6 +328,334 @@ local Window = Rayfield:CreateWindow({
             ["Keybind unavailable"] = "Keybind indisponível",
             ["Various"]             = "Diversos",
             ["Secure mode"]         = "Modo seguro",
+        },
+
+        -- English
+        ["en-us"] = {
+            ["0.05 = muito suave (lento), 0.5 = direto ao alvo."] = "0.05 = very smooth (slow), 0.5 = snaps to target.", ["70 = padrão do Roblox."] = "70 = Roblox default.",
+            ["A gravidade foi resetada para o valor padrão (196.2)"] = "Gravity was reset to the default value (196.2)", ["Acerta o alvo sem mover a câmera (respeita o FOV)."] = "Hits the target without moving the camera (respects FOV).",
+            ["Aimbot"] = "Aimbot", ["Aimbot & Combat"] = "Aimbot & Combat",
+            ["Aimbot Comum"] = "Common Aimbot", ["Aimbot Rage"] = "Rage Aimbot",
+            ["Aimbot comum"] = "Common Aimbot", ["Aimbot e Silent Aim só pegam alvos dentro do círculo."] = "Aimbot and Silent Aim only lock targets inside the circle.",
+            ["Aimbot rage"] = "Rage Aimbot", ["Ajuste a velocidade do voo."] = "Adjust flight speed.",
+            ["Alcance do radar (em studs)."] = "Radar range (in studs).", ["Altera a gravidade do jogo"] = "Changes game gravity",
+            ["Altera o campo de visão da câmera."] = "Changes the camera field of view.", ["Altera o tema visual do Royal Hub (25 temas)."] = "Changes the Royal Hub visual theme (25 themes).",
+            ["Altera velocidade do jogador"] = "Changes player speed", ["Anti-AFK"] = "Anti-AFK",
+            ["Anti-Kick"] = "Anti-Kick", ["Anti-Ragdoll"] = "Anti-Ragdoll",
+            ["Aperta a tecla de parry automaticamente quando inimigo está próximo."] = "Presses the parry key automatically when an enemy is close.", ["Atira automaticamente quando o crosshair está sobre um inimigo."] = "Fires automatically when the crosshair is over an enemy.",
+            ["Ativa a compra automática do item selecionado acima."] = "Enables auto-buy of the item selected above.", ["Ativa câmera na perspectiva do player selecionado."] = "Camera from the selected player's perspective.",
+            ["Ativa o farm automático de level."] = "Enables automatic level farming.", ["Ativa o farm automático de materiais."] = "Enables automatic material farming.",
+            ["Ativa o modo voo"] = "Enables flight mode", ["Ativar Auto Buy"] = "Enable Auto Buy",
+            ["Ativar Auto Farm Level"] = "Enable Auto Farm Level", ["Ativar Auto Farm Materials"] = "Enable Auto Farm Materials",
+            ["Ativar Orbit"] = "Enable Orbit", ["Aumenta a força do pulo"] = "Increases jump power",
+            ["Aumenta o alcance das ferramentas/armas."] = "Increases tool/weapon range.", ["Auto Buy"] = "Auto Buy",
+            ["Auto Clicker"] = "Auto Clicker", ["Auto Clicker CPS"] = "Auto Clicker CPS",
+            ["Auto Farm Level"] = "Auto Farm Level", ["Auto Farm Materials"] = "Auto Farm Materials",
+            ["Auto Parry"] = "Auto Parry", ["Auto Respawn"] = "Auto Respawn",
+            ["Auto Respawn Delay"] = "Auto Respawn Delay", ["Backdoor scanner"] = "Backdoor scanner",
+            ["Bloqueia tentativas de kick do servidor."] = "Blocks server kick attempts.", ["BrookHaven"] = "BrookHaven",
+            ["Bypass Anti-Cheat"] = "Bypass Anti-Cheat", ["Camera FOV"] = "Camera FOV",
+            ["Camera FOV Valor"] = "Camera FOV Value", ["Cancelar"] = "Cancel",
+            ["Carregar config"] = "Load Config", ["Clica automaticamente N vezes por segundo."] = "Clicks N times per second.",
+            ["Click TP"] = "Click TP", ["Clipboard"] = "Clipboard",
+            ["Clique no chão para se teleportar até o ponto."] = "Click the ground to teleport there.", ["Clique para copiar o link do Discord"] = "Click to copy the Discord link",
+            ["Cliques por segundo."] = "Clicks per second.", ["Cole a URL do seu webhook do Discord."] = "Paste your Discord webhook URL.",
+            ["Coleta recompensas diárias automaticamente."] = "Collects daily rewards automatically.", ["Collect Rewards"] = "Collect Rewards",
+            ["Combat"] = "Combat", ["Compensa o lag prevendo a posição do alvo."] = "Compensates lag by predicting target position.",
+            ["Configuration"] = "Configuration", ["Configuration Name"] = "Configuration Name",
+            ["Configurations"] = "Configurations", ["Configurações"] = "Settings",
+            ["Configurações de funções"] = "Function Settings", ["Confirmar Ejeção"] = "Confirm Eject",
+            ["Congela o personagem no lugar."] = "Freezes your character in place.", ["Copia o outfit do jogador selecionado."] = "Copies the selected player's outfit.",
+            ["Copia todos os remotes capturados para a área de transferência."] = "Copies all captured remotes to clipboard.", ["Copiar Logs"] = "Copy Logs",
+            ["Copiar Visual"] = "Copy Look", ["Copy Player — Selecionar"] = "Copy Player — Select",
+            ["Couldn't delete configuration"] = "Couldn't delete configuration", ["Couldn't load configuration"] = "Couldn't load configuration",
+            ["Couldn't save configuration"] = "Couldn't save configuration", ["Crosshair"] = "Crosshair",
+            ["Crosshair Cor"] = "Crosshair Color", ["Crosshair Gap"] = "Crosshair Gap",
+            ["Crosshair Tamanho"] = "Crosshair Size", ["Crosshair customizado no centro da tela (Drawing API)."] = "Custom crosshair at screen center (Drawing API).",
+            ["Câmera livre para explorar o mapa. WASD + Q/E + arrastar botão direito."] = "Free camera to explore. WASD + Q/E + right-drag.", ["Delay Fake TP"] = "Fake TP Delay",
+            ["Delay entre TPs"] = "Delay Between TPs", ["Deleted configuration"] = "Deleted configuration",
+            ["Desenha linhas do centro da tela até cada inimigo (usa Drawing API)."] = "Draws lines from screen center to each enemy (Drawing API).", ["Desenha o círculo de FOV na tela (precisa de Drawing API)."] = "Draws the FOV circle on screen (needs Drawing API).",
+            ["Desliga todas as funções, reverte alterações e remove a UI."] = "Turns everything off, reverts changes, removes the UI.", ["Discord WebHook"] = "Discord WebHook",
+            ["Distância Fake TP"] = "Fake TP Distance", ["Distância do Auto Parry"] = "Auto Parry Distance",
+            ["Distância máxima (studs) para ativar o parry."] = "Max distance (studs) to trigger parry.", ["ESP"] = "ESP",
+            ["ESP (E)"] = "ESP (E)", ["ESP com health bar, box e nome — powered by Twilight."] = "ESP with health bar, box and name — powered by Twilight.",
+            ["ESP — Hitbox Visual"] = "ESP — Hitbox Visual", ["ESP — Linhas"] = "ESP — Lines",
+            ["Ejetar"] = "Eject", ["Ejetar script"] = "Eject Script",
+            ["Em breve - customização de fonte e textos."] = "Coming soon — font and text customization.", ["Em studs. Padrão = 4."] = "In studs. Default = 4.",
+            ["Emote"] = "Emote", ["Emotes disponíveis (mesmo sem ter na conta)."] = "Available emotes (even if you don't own them).",
+            ["Entra em outro servidor da partida atual."] = "Joins another server of the current game.", ["Envia uma mensagem de teste."] = "Sends a test message.",
+            ["Envia webhook quando pegar um item novo."] = "Sends a webhook when you pick up a new item.", ["Erro"] = "Error",
+            ["Escaneia o jogo em busca de backdoors conhecidos."] = "Scans the game for known backdoors.", ["Esp 2.0 (Twilight)"] = "ESP 2.0 (Twilight)",
+            ["Espaço entre o centro e as linhas."] = "Gap between center and lines.", ["Espessura da linha do círculo."] = "Circle line thickness.",
+            ["Espiona TODOS chats privados/DMs."] = "Spies on ALL private chats/DMs.", ["Este é o link do nosso Discord, entre para ficar por dentro das novidades e atualizações do Royal Hub!"] = "This is our Discord link — join to stay on top of Royal Hub news and updates!",
+            ["Executa o emote selecionado."] = "Plays the selected emote.", ["Expande a hitbox dos jogadores para facilitar acertos."] = "Expands player hitboxes for easier hits.",
+            ["Exploits"] = "Exploits", ["Extras"] = "Extras",
+            ["FOV"] = "FOV", ["FOV Ativado"] = "FOV Enabled",
+            ["FOV Cor"] = "FOV Color", ["FOV Espessura"] = "FOV Thickness",
+            ["Fake TP (Dodge)"] = "Fake TP (Dodge)", ["Farm"] = "Farm",
+            ["Fator de Predição"] = "Prediction Factor", ["Faz o emote repetir automaticamente."] = "Loops the emote automatically.",
+            ["Faz o jogador selecionado voar pelo mapa."] = "Sends the selected player flying.", ["Faz o personagem girar infinitamente."] = "Spins your character endlessly.",
+            ["Fling"] = "Fling", ["Fling Spin"] = "Fling Spin",
+            ["Fling Spin Speed"] = "Fling Spin Speed", ["Fly"] = "Fly",
+            ["Fly (F)"] = "Fly (F)", ["Fontes"] = "Fonts",
+            ["Freecam"] = "Freecam", ["Freeze"] = "Freeze",
+            ["Fullbright"] = "Fullbright", ["Fun"] = "Fun",
+            ["General Settings"] = "General Settings", ["Gira o personagem em alta velocidade."] = "Spins your character at high speed.",
+            ["God Mode"] = "God Mode", ["Gravidade"] = "Gravity",
+            ["Gravidade resetada!"] = "Gravity reset!", ["Gravity"] = "Gravity",
+            ["HP Infinito."] = "Infinite HP.", ["Hit Prediction"] = "Hit Prediction",
+            ["Hitbox Expander"] = "Hitbox Expander", ["Hover Name"] = "Hover Name",
+            ["Hub"] = "Hub", ["IDs Troll Prontos"] = "Ready Troll IDs",
+            ["Ignorar Aliados (Team Check)"] = "Ignore Allies (Team Check)", ["Ilha TP"] = "Island TP",
+            ["Ilhas do sea atual."] = "Islands of the current sea.", ["Impede o personagem de cair/ragdoll."] = "Prevents your character from ragdolling.",
+            ["Impede ser kickado por inatividade."] = "Prevents AFK kicks.", ["Infinite Jump"] = "Infinite Jump",
+            ["Info"] = "Info", ["Informações"] = "Information",
+            ["Interrompe o emote atual."] = "Stops the current emote.", ["Invisível"] = "Invisible",
+            ["Jogo detectado"] = "Game detected", ["Jogo não suportado"] = "Game not supported",
+            ["Jump"] = "Jump", ["Jump Lock"] = "Jump Lock",
+            ["KeyBinds"] = "Keybinds", ["Keybind unavailable"] = "Keybind unavailable",
+            ["Kill Aura"] = "Kill Aura", ["Kill Aura Range"] = "Kill Aura Range",
+            ["King-Legacy"] = "King-Legacy", ["Limpar Logs"] = "Clear Logs",
+            ["Link do Discord"] = "Discord Link", ["Link do Discord copiado para a área de transferência!"] = "Discord link copied to clipboard!",
+            ["Loaded configuration"] = "Loaded configuration", ["Loga todos os RemoteEvents disparados no console."] = "Logs all fired RemoteEvents to console.",
+            ["Logando remotes no console..."] = "Logging remotes to console...", ["Loja"] = "Shop",
+            ["Loop Emote"] = "Loop Emote", ["Loop Fling"] = "Loop Fling",
+            ["Loop TP"] = "Loop TP", ["Loop TP (T)"] = "Loop TP (T)",
+            ["Mata automaticamente inimigos próximos."] = "Automatically kills nearby enemies.", ["Miscellaneous"] = "Miscellaneous",
+            ["Modo anonymous / perfil"] = "Anonymous mode / profile", ["Mostra caixas vermelhas ao redor da hitbox expandida (requer Hitbox Expander ativo)."] = "Shows red boxes around the expanded hitbox (needs Hitbox Expander on).",
+            ["Mostra nome e DisplayName dos jogadores acima da cabeça."] = "Shows player names above their heads.", ["Mostrar Círculo"] = "Show Circle",
+            ["Movimento"] = "Movement", ["Name your configuration first"] = "Name your configuration first",
+            ["Nenhum log capturado ainda."] = "No logs captured yet.", ["No Fog"] = "No Fog",
+            ["NoClip"] = "Noclip", ["Notif de Inventário"] = "Inventory Notification",
+            ["Orbit — Selecione Jogador"] = "Orbit — Select Player", ["Parar Emote"] = "Stop Emote",
+            ["Parte do Aimbot"] = "Aimbot Part", ["Parte do Silent Aim"] = "Silent Aim Part",
+            ["Permite atravessar paredes e objetos."] = "Walk through walls and objects.", ["Permite pular infinitamente no ar."] = "Jump infinitely in the air.",
+            ["Personagem"] = "Character", ["Personalização"] = "Customization",
+            ["Pick a configuration to delete"] = "Pick a configuration to delete", ["Pick a configuration to load"] = "Pick a configuration to load",
+            ["Players ficam visíveis atrás de paredes e marcados."] = "Players visible through walls and highlighted.", ["Proteção"] = "Protection",
+            ["Qual parte do corpo mira."] = "Which body part to aim at.", ["Qual parte do corpo o aimbot mira."] = "Which body part the aimbot targets.",
+            ["Quanto maior, mais à frente mira (1.0 = 100% do ping)."] = "Higher = aims further ahead (1.0 = 100% of ping).", ["Quão longe o fake TP vai (em studs)"] = "How far the fake TP goes (in studs)",
+            ["Radar"] = "Radar", ["Radar 2D mostrando posição dos inimigos."] = "2D radar showing enemy positions.",
+            ["Radar Range"] = "Radar Range", ["Raio do círculo em pixels."] = "Circle radius in pixels.",
+            ["Rayfield Settings"] = "Rayfield Settings", ["Re-aplica a velocidade mesmo se o jogo tentar resetar."] = "Re-applies speed even if the game resets it.",
+            ["Re-aplica o pulo mesmo se o jogo tentar resetar."] = "Re-applies jump even if the game resets it.", ["Reach"] = "Reach",
+            ["Reach Size"] = "Reach Size", ["Recording"] = "Recording",
+            ["Redeem Codes"] = "Redeem Codes", ["Redetectar Sea"] = "Redetect Sea",
+            ["Reentra na partida atual."] = "Rejoins the current game.", ["Rejoin"] = "Rejoin",
+            ["Remote Logs"] = "Remote Logs", ["Remote Spy"] = "Remote Spy",
+            ["Remove névoa do jogo."] = "Removes game fog.", ["Remove sombras e escuridão do mapa."] = "Removes shadows and darkness.",
+            ["Renasce sozinho ao morrer."] = "Auto-respawns when you die.", ["Reset Gravity"] = "Reset Gravity",
+            ["Reset Window Position"] = "Reset Window Position", ["Reseta a gravidade para o valor padrão (196.2)"] = "Resets gravity to default (196.2)",
+            ["Resgata códigos automaticamente."] = "Redeems codes automatically.", ["Royal Hub é um script feito para o Roblox, criado apenas por dois desenvolvedores e focado em entregar uma experiência completa e segura para os jogadores. Com uma variedade de funcionalidades, desde melhorias no personagem até opções de farm automatizado, o Royal Hub visa facilitar a jogabilidade e proporcionar vantagens estratégicas dentro do jogo. Desenvolvido com atenção à segurança, o script busca garantir que os usuários possam aproveitar suas funcionalidades sem comprometer a integridade de suas contas."] = "Royal Hub is a Roblox script built by two developers, focused on a complete and safe player experience. With features ranging from character upgrades to automated farming, Royal Hub makes gameplay easier and gives you a strategic edge. Developed with security in mind, so you can enjoy every feature without putting your account at risk.",
+            ["Salvar Config"] = "Save Config", ["Saved Configurations"] = "Saved Configurations",
+            ["Saved configuration"] = "Saved configuration", ["Search"] = "Search",
+            ["Search all pages"] = "Search all pages", ["Secure mode"] = "Secure mode",
+            ["Seleciona o item que deseja comprar automaticamente."] = "Selects the item to auto-buy.", ["Seleciona o material que deseja farmar automaticamente."] = "Selects the material to auto-farm.",
+            ["Seleciona o player para spectate."] = "Selects the player to spectate.", ["Selecionar Ilha"] = "Select Island",
+            ["Selecionar Item"] = "Select Item", ["Selecionar Material"] = "Select Material",
+            ["Selecione Emote"] = "Select Emote", ["Selecione Jogador (Fling)"] = "Select Player (Fling)",
+            ["Selecione o Player"] = "Select Player", ["Selecione o jogador para copiar o visual."] = "Select the player to copy the look from.",
+            ["Selecione um alvo primeiro!"] = "Select a target first!", ["Selecione um alvo!"] = "Select a target!",
+            ["Selecione um emote primeiro!"] = "Select an emote first!", ["Selecione uma ilha primeiro!"] = "Select an island first!",
+            ["Selecione..."] = "Select...", ["Server Hop"] = "Server Hop",
+            ["Settings"] = "Settings", ["Show profile"] = "Show profile",
+            ["Signed in as"] = "Signed in as", ["Silent Aim"] = "Silent Aim",
+            ["Smooth do Aimbot"] = "Aimbot Smoothing", ["Sobre o Royal Hub"] = "About Royal Hub",
+            ["Spectate Player"] = "Spectate Player", ["Speed"] = "Speed",
+            ["Speed Lock"] = "Speed Lock", ["Spin"] = "Spin",
+            ["Spin (G)"] = "Spin (G)", ["SpyChat"] = "SpyChat",
+            ["Tamanho da Hitbox"] = "Hitbox Size", ["Tamanho do FOV"] = "FOV Size",
+            ["Tecla de Parry"] = "Parry Key", ["Tecla que o jogo usa para parry."] = "Key the game uses for parry.",
+            ["Teleport"] = "Teleport", ["Teleport to Islands"] = "Teleport to Islands",
+            ["Teleporta até o jogador selecionado"] = "Teleports to the selected player", ["Teleporta infinitamente no jogador que foi selecionado acima."] = "Endlessly teleports to the player selected above.",
+            ["Teleportar até jogador"] = "Teleport to Player", ["Teleportar para Ilha"] = "Teleport to Island",
+            ["Teleporte"] = "Teleport", ["Tema do Hub"] = "Hub Theme",
+            ["Temas"] = "Themes", ["Tempo (s) entre morrer e nascer."] = "Time (s) between death and respawn.",
+            ["Tempo em segundos entre cada teleporte (menor = mais rápido)"] = "Seconds between each teleport (lower = faster)", ["Tempo entre cliques (segundos)."] = "Time between clicks (seconds).",
+            ["Tempo entre fakes (menor = mais rápido)"] = "Time between fakes (lower = faster)", ["Tenta burlar o sistema anti-cheat do jogo."] = "Tries to bypass the game's anti-cheat.",
+            ["Testar WebHook"] = "Test WebHook", ["Tocar Global"] = "Play Global",
+            ["Todas as funções serão desligadas e as alterações revertidas. Esta ação não pode ser desfeita."] = "All features will be turned off and changes reverted. This action cannot be undone.", ["Toggle Keybind"] = "Toggle Keybind",
+            ["Torna o personagem invisível localmente."] = "Makes your character locally invisible.", ["Torna os personagens inimigos em ForceField para fácil visualização."] = "Turns enemies into ForceField for easy spotting.",
+            ["Trigger Bot"] = "Trigger Bot", ["Trigger Bot Delay"] = "Trigger Bot Delay",
+            ["UI carregada com sucesso!"] = "UI loaded successfully!", ["URL do WebHook"] = "WebHook URL",
+            ["URL salva!"] = "URL saved!", ["Universais"] = "Universal",
+            ["Usar Emote"] = "Use Emote", ["Use após trocar de sea."] = "Use after switching seas.",
+            ["Utilidades"] = "Utilities", ["Various"] = "Various",
+            ["Velocidade Rotação"] = "Rotation Speed", ["Velocidade de rotação do fling spin."] = "Fling spin rotation speed.",
+            ["Velocidade do Fly"] = "Fly Speed", ["Visual"] = "Visual",
+            ["Volume"] = "Volume", ["Wall Check (Ignorar Paredes)"] = "Wall Check (Ignore Walls)",
+            ["WebHook"] = "WebHook", ["Welcome toast"] = "Welcome toast",
+            ["Xray"] = "Xray",
+            ["Altera o idioma da interface na hora."] = "Changes the interface language instantly.", ["Arremessado: "] = "Launched: ",
+            ["Falha ao carregar "] = "Failed to load ", ["Fling Player"] = "Fling Player",
+            ["Fling Power"] = "Fling Power", ["Idioma"] = "Language",
+            ["RoyalHub"] = "RoyalHub", ["Secure"] = "Secure",
+            ["Teleportado para "] = "Teleported to ",
+            ["O modo anonymous (esconder nome e avatar) agora fica na aba Settings nativa do Rayfield: opção \"Show profile\". Lá também ficam a tecla de abrir/fechar o menu (Toggle Keybind) e as configurações salvas (Configurations)."] = "The anonymous mode (hiding name and avatar) now lives in Rayfield's native Settings tab: the \"Show profile\" option. The menu toggle key (Toggle Keybind) and saved configurations (Configurations) are there too.",
+            ["Royal Hub"] = "Royal Hub",
+        },
+        -- Español
+        ["es"] = {
+            ["0.05 = muito suave (lento), 0.5 = direto ao alvo."] = "0.05 = very smooth (slow), 0.5 = snaps to target.", ["70 = padrão do Roblox."] = "70 = Roblox default.",
+            ["A gravidade foi resetada para o valor padrão (196.2)"] = "La gravedad fue restablecida al valor predeterminado (196.2)", ["Acerta o alvo sem mover a câmera (respeita o FOV)."] = "Hits the target without moving the camera (respects FOV).",
+            ["Aimbot"] = "Aimbot", ["Aimbot & Combat"] = "Aimbot & Combat",
+            ["Aimbot Comum"] = "Aimbot común", ["Aimbot Rage"] = "Aimbot rage",
+            ["Aimbot comum"] = "Aimbot común", ["Aimbot e Silent Aim só pegam alvos dentro do círculo."] = "Aimbot and Silent Aim only lock targets inside the circle.",
+            ["Aimbot rage"] = "Aimbot rage", ["Ajuste a velocidade do voo."] = "Adjust flight speed.",
+            ["Alcance do radar (em studs)."] = "Radar range (in studs).", ["Altera a gravidade do jogo"] = "Changes game gravity",
+            ["Altera o campo de visão da câmera."] = "Changes the camera field of view.", ["Altera o tema visual do Royal Hub (25 temas)."] = "Changes the Royal Hub visual theme (25 themes).",
+            ["Altera velocidade do jogador"] = "Changes player speed", ["Anti-AFK"] = "Anti-AFK",
+            ["Anti-Kick"] = "Anti-Kick", ["Anti-Ragdoll"] = "Anti-Ragdoll",
+            ["Aperta a tecla de parry automaticamente quando inimigo está próximo."] = "Presses the parry key automatically when an enemy is close.", ["Atira automaticamente quando o crosshair está sobre um inimigo."] = "Fires automatically when the crosshair is over an enemy.",
+            ["Ativa a compra automática do item selecionado acima."] = "Enables auto-buy of the item selected above.", ["Ativa câmera na perspectiva do player selecionado."] = "Camera from the selected player's perspective.",
+            ["Ativa o farm automático de level."] = "Enables automatic level farming.", ["Ativa o farm automático de materiais."] = "Enables automatic material farming.",
+            ["Ativa o modo voo"] = "Enables flight mode", ["Ativar Auto Buy"] = "Activar Auto Buy",
+            ["Ativar Auto Farm Level"] = "Activar Auto Farm Level", ["Ativar Auto Farm Materials"] = "Activar Auto Farm Materials",
+            ["Ativar Orbit"] = "Activar órbita", ["Aumenta a força do pulo"] = "Increases jump power",
+            ["Aumenta o alcance das ferramentas/armas."] = "Increases tool/weapon range.", ["Auto Buy"] = "Auto Buy",
+            ["Auto Clicker"] = "Auto clicker", ["Auto Clicker CPS"] = "CPS del Auto Clicker",
+            ["Auto Farm Level"] = "Auto Farm Level", ["Auto Farm Materials"] = "Auto Farm Materials",
+            ["Auto Parry"] = "Auto Parry", ["Auto Respawn"] = "Auto respawn",
+            ["Auto Respawn Delay"] = "Delay de auto respawn", ["Backdoor scanner"] = "Backdoor scanner",
+            ["Bloqueia tentativas de kick do servidor."] = "Blocks server kick attempts.", ["BrookHaven"] = "BrookHaven",
+            ["Bypass Anti-Cheat"] = "Bypass Anti-Cheat", ["Camera FOV"] = "FOV de cámara",
+            ["Camera FOV Valor"] = "Valor FOV de cámara", ["Cancelar"] = "Cancelar",
+            ["Carregar config"] = "Cargar config", ["Clica automaticamente N vezes por segundo."] = "Clicks N times per second.",
+            ["Click TP"] = "Click TP", ["Clipboard"] = "Portapapeles",
+            ["Clique no chão para se teleportar até o ponto."] = "Click the ground to teleport there.", ["Clique para copiar o link do Discord"] = "Clic para copiar el link de Discord",
+            ["Cliques por segundo."] = "Clicks per second.", ["Cole a URL do seu webhook do Discord."] = "Paste your Discord webhook URL.",
+            ["Coleta recompensas diárias automaticamente."] = "Collects daily rewards automatically.", ["Collect Rewards"] = "Recolectar recompensas",
+            ["Combat"] = "Combat", ["Compensa o lag prevendo a posição do alvo."] = "Compensates lag by predicting target position.",
+            ["Configuration"] = "Configuración", ["Configuration Name"] = "Nombre de configuración",
+            ["Configurations"] = "Configuraciones", ["Configurações"] = "Ajustes",
+            ["Configurações de funções"] = "Ajustes de funciones", ["Confirmar Ejeção"] = "Confirmar eyección",
+            ["Congela o personagem no lugar."] = "Freezes your character in place.", ["Copia o outfit do jogador selecionado."] = "Copies the selected player's outfit.",
+            ["Copia todos os remotes capturados para a área de transferência."] = "Copies all captured remotes to clipboard.", ["Copiar Logs"] = "Copiar logs",
+            ["Copiar Visual"] = "Copiar visual", ["Copy Player — Selecionar"] = "Copy Player — Seleccionar",
+            ["Couldn't delete configuration"] = "No se pudo eliminar la configuración", ["Couldn't load configuration"] = "No se pudo cargar la configuración",
+            ["Couldn't save configuration"] = "No se pudo guardar la configuración", ["Crosshair"] = "Crosshair",
+            ["Crosshair Cor"] = "Color del crosshair", ["Crosshair Gap"] = "Gap del crosshair",
+            ["Crosshair Tamanho"] = "Tamaño del crosshair", ["Crosshair customizado no centro da tela (Drawing API)."] = "Custom crosshair at screen center (Drawing API).",
+            ["Câmera livre para explorar o mapa. WASD + Q/E + arrastar botão direito."] = "Free camera to explore. WASD + Q/E + right-drag.", ["Delay Fake TP"] = "Delay del Fake TP",
+            ["Delay entre TPs"] = "Delay entre TPs", ["Delay entre TPs."] = "Delay entre TPs",
+            ["Deleted configuration"] = "Configuración eliminada", ["Desenha linhas do centro da tela até cada inimigo (usa Drawing API)."] = "Draws lines from screen center to each enemy (Drawing API).",
+            ["Desenha o círculo de FOV na tela (precisa de Drawing API)."] = "Draws the FOV circle on screen (needs Drawing API).", ["Desliga todas as funções, reverte alterações e remove a UI."] = "Turns everything off, reverts changes, removes the UI.",
+            ["Discord WebHook"] = "WebHook de Discord", ["Distância Fake TP"] = "Distancia del Fake TP",
+            ["Distância do Auto Parry"] = "Distancia del Auto Parry", ["Distância máxima (studs) para ativar o parry."] = "Max distance (studs) to trigger parry.",
+            ["ESP"] = "ESP", ["ESP (E)"] = "ESP (E)",
+            ["ESP com health bar, box e nome — powered by Twilight."] = "ESP with health bar, box and name — powered by Twilight.", ["ESP — Hitbox Visual"] = "ESP — Hitbox Visual",
+            ["ESP — Linhas"] = "ESP — Lines", ["Ejetar"] = "Eyectar",
+            ["Ejetar script"] = "Eyectar script", ["Em breve - customização de fonte e textos."] = "Pronto — personalización de fuente y textos.",
+            ["Em studs. Padrão = 4."] = "In studs. Default = 4.", ["Emote"] = "Emote",
+            ["Emotes disponíveis (mesmo sem ter na conta)."] = "Available emotes (even if you don't own them).", ["Entra em outro servidor da partida atual."] = "Joins another server of the current game.",
+            ["Envia uma mensagem de teste."] = "Sends a test message.", ["Envia webhook quando pegar um item novo."] = "Sends a webhook when you pick up a new item.",
+            ["Erro"] = "Error", ["Escaneia o jogo em busca de backdoors conhecidos."] = "Scans the game for known backdoors.",
+            ["Esp 2.0 (Twilight)"] = "ESP 2.0 (Twilight)", ["Espaço entre o centro e as linhas."] = "Gap between center and lines.",
+            ["Espessura da linha do círculo."] = "Circle line thickness.", ["Espiona TODOS chats privados/DMs."] = "Spies on ALL private chats/DMs.",
+            ["Este é o link do nosso Discord, entre para ficar por dentro das novidades e atualizações do Royal Hub!"] = "This is our Discord link — join to stay on top of Royal Hub news and updates!", ["Executa o emote selecionado."] = "Plays the selected emote.",
+            ["Expande a hitbox dos jogadores para facilitar acertos."] = "Expands player hitboxes for easier hits.", ["Exploits"] = "Exploits",
+            ["Extras"] = "Extras", ["FOV"] = "FOV",
+            ["FOV Ativado"] = "FOV activado", ["FOV Cor"] = "Color del FOV",
+            ["FOV Espessura"] = "Grosor del FOV", ["Fake TP (Dodge)"] = "Fake TP (Dodge)",
+            ["Farm"] = "Farm", ["Fator de Predição"] = "Factor de predicción",
+            ["Faz o emote repetir automaticamente."] = "Loops the emote automatically.", ["Faz o jogador selecionado voar pelo mapa."] = "Sends the selected player flying.",
+            ["Faz o personagem girar infinitamente."] = "Spins your character endlessly.", ["Fling"] = "Fling",
+            ["Fling Spin"] = "Fling Spin", ["Fling Spin Speed"] = "Velocidad del Fling Spin",
+            ["Fly"] = "Fly", ["Fly (F)"] = "Fly (F)",
+            ["Fontes"] = "Fuentes", ["Freecam"] = "Freecam",
+            ["Freeze"] = "Congelar", ["Fullbright"] = "Fullbright",
+            ["Fun"] = "Diversión", ["General Settings"] = "General Settings",
+            ["Gira o personagem em alta velocidade."] = "Spins your character at high speed.", ["God Mode"] = "God Mode",
+            ["Gravidade"] = "Gravedad", ["Gravidade resetada!"] = "¡Gravedad restablecida!",
+            ["Gravity"] = "Gravity", ["HP Infinito."] = "Infinite HP.",
+            ["Hit Prediction"] = "Hit Prediction", ["Hitbox Expander"] = "Hitbox Expander",
+            ["Hover Name"] = "Nombre flotante", ["Hub"] = "Hub",
+            ["IDs Troll Prontos"] = "IDs troll listas", ["Ignorar Aliados (Team Check)"] = "Ignorar aliados (Team Check)",
+            ["Ilha TP"] = "TP de isla", ["Ilhas do sea atual."] = "Islands of the current sea.",
+            ["Impede o personagem de cair/ragdoll."] = "Prevents your character from ragdolling.", ["Impede ser kickado por inatividade."] = "Prevents AFK kicks.",
+            ["Infinite Jump"] = "Salto infinito", ["Info"] = "Info",
+            ["Informações"] = "Información", ["Interrompe o emote atual."] = "Stops the current emote.",
+            ["Invisível"] = "Invisible", ["Jogo detectado"] = "Juego detectado",
+            ["Jogo não suportado"] = "Juego no soportado", ["Jump"] = "Jump",
+            ["Jump Lock"] = "Jump Lock", ["KeyBinds"] = "Keybinds",
+            ["Keybind unavailable"] = "Tecla no disponible", ["Kill Aura"] = "Kill Aura",
+            ["Kill Aura Range"] = "Alcance del Kill Aura", ["King-Legacy"] = "King-Legacy",
+            ["Limpar Logs"] = "Limpiar logs", ["Link do Discord"] = "Link de Discord",
+            ["Link do Discord copiado para a área de transferência!"] = "¡Link de Discord copiado al portapapeles!", ["Loaded configuration"] = "Configuración cargada",
+            ["Loga todos os RemoteEvents disparados no console."] = "Logs all fired RemoteEvents to console.", ["Logando remotes no console..."] = "Registrando remotes en consola...",
+            ["Loja"] = "Tienda", ["Loop Emote"] = "Emote en loop",
+            ["Loop Fling"] = "Fling en loop", ["Loop TP"] = "Loop TP",
+            ["Loop TP (T)"] = "Loop TP (T)", ["Mata automaticamente inimigos próximos."] = "Automatically kills nearby enemies.",
+            ["Miscellaneous"] = "Miscellaneous", ["Modo anonymous / perfil"] = "Anonymous mode / profile",
+            ["Mostra caixas vermelhas ao redor da hitbox expandida (requer Hitbox Expander ativo)."] = "Shows red boxes around the expanded hitbox (needs Hitbox Expander on).", ["Mostra nome e DisplayName dos jogadores acima da cabeça."] = "Shows player names above their heads.",
+            ["Mostrar Círculo"] = "Mostrar círculo", ["Movimento"] = "Movimiento",
+            ["Name your configuration first"] = "Primero nombra tu configuración", ["Nenhum log capturado ainda."] = "Aún no hay logs capturados.",
+            ["No Fog"] = "Sin niebla", ["NoClip"] = "Noclip",
+            ["Notif de Inventário"] = "Notif. de inventario", ["Orbit — Selecione Jogador"] = "Órbita — Seleccionar jugador",
+            ["Parar Emote"] = "Detener emote", ["Parte do Aimbot"] = "Parte del aimbot",
+            ["Parte do Silent Aim"] = "Parte del Silent Aim", ["Permite atravessar paredes e objetos."] = "Walk through walls and objects.",
+            ["Permite pular infinitamente no ar."] = "Jump infinitely in the air.", ["Personagem"] = "Personaje",
+            ["Personalização"] = "Personalización", ["Pick a configuration to delete"] = "Elige una configuración para eliminar",
+            ["Pick a configuration to load"] = "Elige una configuración para cargar", ["Players ficam visíveis atrás de paredes e marcados."] = "Players visible through walls and highlighted.",
+            ["Proteção"] = "Protección", ["Qual parte do corpo mira."] = "Which body part to aim at.",
+            ["Qual parte do corpo o aimbot mira."] = "Which body part the aimbot targets.", ["Quanto maior, mais à frente mira (1.0 = 100% do ping)."] = "Higher = aims further ahead (1.0 = 100% of ping).",
+            ["Quão longe o fake TP vai (em studs)"] = "How far the fake TP goes (in studs)", ["Radar"] = "Radar",
+            ["Radar 2D mostrando posição dos inimigos."] = "2D radar showing enemy positions.", ["Radar Range"] = "Alcance del radar",
+            ["Raio do círculo em pixels."] = "Circle radius in pixels.", ["Rayfield Settings"] = "Ajustes de Rayfield",
+            ["Re-aplica a velocidade mesmo se o jogo tentar resetar."] = "Re-applies speed even if the game resets it.", ["Re-aplica o pulo mesmo se o jogo tentar resetar."] = "Re-applies jump even if the game resets it.",
+            ["Reach"] = "Reach", ["Reach Size"] = "Tamaño del reach",
+            ["Recording"] = "Grabando", ["Redeem Codes"] = "Canjear códigos",
+            ["Redetectar Sea"] = "Redetectar mar", ["Reentra na partida atual."] = "Rejoins the current game.",
+            ["Rejoin"] = "Reentrar", ["Remote Logs"] = "Logs de remotes",
+            ["Remote Spy"] = "Remote Spy", ["Remove névoa do jogo."] = "Removes game fog.",
+            ["Remove sombras e escuridão do mapa."] = "Removes shadows and darkness.", ["Renasce sozinho ao morrer."] = "Auto-respawns when you die.",
+            ["Reset Gravity"] = "Restablecer gravedad", ["Reset Window Position"] = "Restablecer posición",
+            ["Reseta a gravidade para o valor padrão (196.2)"] = "Resets gravity to default (196.2)", ["Resgata códigos automaticamente."] = "Redeems codes automatically.",
+            ["Royal Hub é um script feito para o Roblox, criado apenas por dois desenvolvedores e focado em entregar uma experiência completa e segura para os jogadores. Com uma variedade de funcionalidades, desde melhorias no personagem até opções de farm automatizado, o Royal Hub visa facilitar a jogabilidade e proporcionar vantagens estratégicas dentro do jogo. Desenvolvido com atenção à segurança, o script busca garantir que os usuários possam aproveitar suas funcionalidades sem comprometer a integridade de suas contas."] = "Royal Hub is a Roblox script built by two developers, focused on a complete and safe player experience. With features ranging from character upgrades to automated farming, Royal Hub makes gameplay easier and gives you a strategic edge. Developed with security in mind, so you can enjoy every feature without putting your account at risk.", ["Salvar Config"] = "Guardar config",
+            ["Saved Configurations"] = "Configuraciones guardadas", ["Saved configuration"] = "Configuración guardada",
+            ["Search"] = "Buscar", ["Search all pages"] = "Buscar en todas las páginas",
+            ["Secure mode"] = "Modo seguro", ["Seleciona o item que deseja comprar automaticamente."] = "Selects the item to auto-buy.",
+            ["Seleciona o material que deseja farmar automaticamente."] = "Selects the material to auto-farm.", ["Seleciona o player para spectate."] = "Selects the player to spectate.",
+            ["Selecionar Ilha"] = "Seleccionar isla", ["Selecionar Item"] = "Seleccionar artículo",
+            ["Selecionar Material"] = "Seleccionar material", ["Selecione Emote"] = "Seleccionar emote",
+            ["Selecione Jogador (Fling)"] = "Seleccionar jugador (Fling)", ["Selecione o Player"] = "Seleccionar player",
+            ["Selecione o jogador para copiar o visual."] = "Select the player to copy the look from.", ["Selecione um alvo primeiro!"] = "¡Selecciona un objetivo primero!",
+            ["Selecione um alvo!"] = "¡Selecciona un objetivo!", ["Selecione um emote primeiro!"] = "¡Selecciona un emote primero!",
+            ["Selecione uma ilha primeiro!"] = "¡Selecciona una isla primero!", ["Selecione..."] = "Seleccionar...",
+            ["Server Hop"] = "Server Hop", ["Settings"] = "Ajustes",
+            ["Show profile"] = "Mostrar perfil", ["Signed in as"] = "Sesión como",
+            ["Silent Aim"] = "Silent Aim", ["Smooth do Aimbot"] = "Suavidad del aimbot",
+            ["Sobre o Royal Hub"] = "Sobre Royal Hub", ["Spectate Player"] = "Espectar jugador",
+            ["Speed"] = "Speed", ["Speed Lock"] = "Speed Lock",
+            ["Spin"] = "Spin", ["Spin (G)"] = "Spin (G)",
+            ["SpyChat"] = "SpyChat", ["Tamanho da Hitbox"] = "Tamaño de hitbox",
+            ["Tamanho do FOV"] = "Tamaño del FOV", ["Tecla de Parry"] = "Tecla de parry",
+            ["Tecla que o jogo usa para parry."] = "Key the game uses for parry.", ["Teleport"] = "Teleport",
+            ["Teleport to Islands"] = "Teleport to Islands", ["Teleporta até o jogador selecionado"] = "Teleports to the selected player",
+            ["Teleporta infinitamente no jogador que foi selecionado acima."] = "Endlessly teleports to the player selected above.", ["Teleportar até jogador"] = "Teletransportar al jugador",
+            ["Teleportar para Ilha"] = "Teletransportar a isla", ["Teleporte"] = "Teletransporte",
+            ["Tema do Hub"] = "Tema del hub", ["Temas"] = "Temas",
+            ["Tempo (s) entre morrer e nascer."] = "Time (s) between death and respawn.", ["Tempo em segundos entre cada teleporte (menor = mais rápido)"] = "Seconds between each teleport (lower = faster)",
+            ["Tempo entre cliques (segundos)."] = "Time between clicks (seconds).", ["Tempo entre fakes (menor = mais rápido)"] = "Time between fakes (lower = faster)",
+            ["Tenta burlar o sistema anti-cheat do jogo."] = "Tries to bypass the game's anti-cheat.", ["Testar WebHook"] = "Probar WebHook",
+            ["Tocar Global"] = "Reproducir global", ["Todas as funções serão desligadas e as alterações revertidas. Esta ação não pode ser desfeita."] = "Todas las funciones se apagarán y los cambios se revertirán. Esta acción no se puede deshacer.",
+            ["Toggle Keybind"] = "Tecla del menú", ["Torna o personagem invisível localmente."] = "Makes your character locally invisible.",
+            ["Torna os personagens inimigos em ForceField para fácil visualização."] = "Turns enemies into ForceField for easy spotting.", ["Trigger Bot"] = "Trigger Bot",
+            ["Trigger Bot Delay"] = "Delay del Trigger Bot", ["UI carregada com sucesso!"] = "¡UI cargada con éxito!",
+            ["URL do WebHook"] = "URL del WebHook", ["URL salva!"] = "¡URL guardada!",
+            ["Universais"] = "Universal", ["Usar Emote"] = "Usar emote",
+            ["Use após trocar de sea."] = "Use after switching seas.", ["Utilidades"] = "Utilidades",
+            ["Various"] = "Varios", ["Velocidade Rotação"] = "Velocidad de rotación",
+            ["Velocidade de rotação do fling spin."] = "Fling spin rotation speed.", ["Velocidade do Fly"] = "Velocidad del vuelo",
+            ["Visual"] = "Visual", ["Volume"] = "Volumen",
+            ["Wall Check (Ignorar Paredes)"] = "Wall Check (ignorar paredes)", ["WebHook"] = "WebHook",
+            ["Welcome toast"] = "Toast de bienvenida", ["Xray"] = "Xray",
+            ["Altera o idioma da interface na hora."] = "Cambia el idioma de la interfaz al instante.", ["Arremessado: "] = "Lanzado: ",
+            ["Falha ao carregar "] = "Error al cargar ", ["Fling Player"] = "Fling Player",
+            ["Fling Power"] = "Fling Power", ["Idioma"] = "Idioma",
+            ["Teleportado para "] = "Teletransportado a ",
+            ["O modo anonymous (esconder nome e avatar) agora fica na aba Settings nativa do Rayfield: opção \"Show profile\". Lá também ficam a tecla de abrir/fechar o menu (Toggle Keybind) e as configurações salvas (Configurations)."] = "El modo anónimo (ocultar nombre y avatar) ahora está en la pestaña nativa de Settings de Rayfield: la opción \"Show profile\". Allí también están la tecla del menú (Toggle Keybind) y las configuraciones guardadas (Configurations).",
+            ["Royal Hub"] = "Royal Hub",
         },
     },
 })
@@ -713,6 +1041,27 @@ TabVisual:CreateToggle({
 })
 
 TabVisual:CreateToggle({
+    name = "Chams",
+    description = "Inimigos com material ForceField colorido (atravessa paredes).",
+    flag = "Chams",
+    callback = function(state) G.toggleChams(state) end,
+})
+
+TabVisual:CreateColorPicker({
+    name = "Chams Cor",
+    color = Color3.fromRGB(0, 255, 170),
+    flag = "ChamsColor",
+    callback = function(color) G.ChamsColor = color end,
+})
+
+TabVisual:CreateToggle({
+    name = "Highlight no Alvo",
+    description = "Highlight no jogador selecionado em 'Selecione o Player' (Visual).",
+    flag = "TargetHighlight",
+    callback = function(state) G.toggleTargetHighlight(state) end,
+})
+
+TabVisual:CreateToggle({
     name = "NoClip",
     description = "Permite atravessar paredes e objetos.",
     flag = "NoClip",
@@ -865,6 +1214,38 @@ TabPersonagem:CreateToggle({
     description = "Impede ser kickado por inatividade.",
     flag = "AntiAFK",
     callback = function(state) G.toggleAntiAFK(state) end,
+})
+
+TabPersonagem:CreateToggle({
+    name = "Sprint (LeftShift)",
+    description = "Segure LeftShift para correr com velocidade turbo.",
+    flag = "Sprint",
+    callback = function(state) G.toggleSprint(state) end,
+})
+
+TabPersonagem:CreateSlider({
+    name = "Velocidade do Sprint",
+    range = { 25, 200 },
+    increment = 1,
+    value = 32,
+    flag = "SprintSpeed",
+    callback = function(value) G.setSprintSpeed(value) end,
+})
+
+TabPersonagem:CreateToggle({
+    name = "Third Person",
+    description = "Trava a câmera em 3ª pessoa com distância fixa.",
+    flag = "ThirdPerson",
+    callback = function(state) G.toggleThirdPerson(state) end,
+})
+
+TabPersonagem:CreateSlider({
+    name = "Distância da Câmera",
+    range = { 4, 30 },
+    increment = 1,
+    value = 12,
+    flag = "ThirdPersonOffset",
+    callback = function(value) G.setThirdPersonOffset(value) end,
 })
 
 TabPersonagem:CreateToggle({
@@ -1671,6 +2052,104 @@ TabThemes:CreateDropdown({
     placeholder = "Selecione...",
     flag = "tema_selecionado",
     callback = function(option) Window:ChangeTheme(Themes[option]) end,
+})
+
+TabThemes:CreateDropdown({
+    name = "Idioma",
+    description = "Auto = idioma do Roblox do jogador.",
+    options = { "Auto (Roblox)", "pt-br", "en-us", "es" },
+    value = "Auto (Roblox)",
+    flag = "idioma_selecionado",
+    callback = function(locale)
+        if locale == "Auto (Roblox)" then
+            -- mesmo mecanismo do auto-detect do boot (RobloxLocaleId)
+            local ok, detected = pcall(function()
+                return game:GetService("LocalizationService").RobloxLocaleId
+            end)
+            Window:SetLocale(ok and detected or "pt-br")
+        else
+            Window:SetLocale(locale)
+        end
+    end,
+})
+
+-- Animação do gradiente da janela (nativo do Rayfield)
+TabThemes:CreateSection({ name = "Animações" })
+
+TabThemes:CreateToggle({
+    name = "Animação de Fundo (Janela)",
+    description = "O gradiente da janela fica vivo, derivando de lado a lado.",
+    value = false,
+    flag = "live_animation",
+    callback = function(state)
+        Window:ChangeTheme({ LiveAnimation = state })
+    end,
+})
+
+-- Fundo animado atrás do hub (partículas customizáveis)
+TabThemes:CreateSection({ name = "Fundo Custom (BG)" })
+
+TabThemes:CreateToggle({
+    name = "Fundo Animado",
+    description = "Partículas + gradiente atrás de toda a tela (atrás do hub).",
+    flag = "CustomBg",
+    callback = function(state) G.toggleCustomBg(state) end,
+})
+
+TabThemes:CreateColorPicker({
+    name = "Cor do Fundo",
+    color = Color3.fromRGB(130, 90, 255),
+    flag = "CustomBgColor",
+    callback = function(color) G.setCustomBgColor(color) end,
+})
+
+TabThemes:CreateSlider({
+    name = "Velocidade das Partículas",
+    range = { 0.5, 3 },
+    increment = 0.1,
+    value = 1,
+    flag = "CustomBgSpeed",
+    callback = function(value) G.setCustomBgSpeed(value) end,
+})
+
+-- Tema personalizado: monta um tema com suas cores
+TabThemes:CreateSection({ name = "Tema Personalizado" })
+
+local CustomAccent = Color3.fromRGB(138, 43, 226)
+local CustomWindow = Color3.fromRGB(18, 14, 26)
+local CustomText   = Color3.fromRGB(240, 240, 255)
+
+TabThemes:CreateColorPicker({
+    name = "Cor de Destaque (Accent)",
+    color = CustomAccent,
+    flag = "CustomAccent",
+    callback = function(color)
+        CustomAccent = color
+        Window:ChangeTheme({
+            AccentColor = CustomAccent,
+            AccentStroke = CustomAccent,
+        })
+    end,
+})
+
+TabThemes:CreateColorPicker({
+    name = "Cor da Janela",
+    color = CustomWindow,
+    flag = "CustomWindow",
+    callback = function(color)
+        CustomWindow = color
+        Window:ChangeTheme({ WindowColor = CustomWindow })
+    end,
+})
+
+TabThemes:CreateColorPicker({
+    name = "Cor do Texto",
+    color = CustomText,
+    flag = "CustomText",
+    callback = function(color)
+        CustomText = color
+        Window:ChangeTheme({ ContentColor = CustomText })
+    end,
 })
 
 TabThemes:CreateText({
