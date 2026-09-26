@@ -661,6 +661,14 @@ local Window = Rayfield:CreateWindow({
 })
 
 
+-- Snapshot do tema ativo no boot: restaura as cores quando o RGB é desligado
+local LastAppliedTheme = {
+    WindowColor     = Window.theme.WindowColor,
+    AccentColor     = Window.theme.AccentColor,
+    ElementGradient = Window.theme.ElementGradient,
+    ElementStroke   = Window.theme.ElementStroke,
+}
+
 print("========================= Royal Hub (Rayfield Gen2) carregado com sucesso! =========================")
 
 --============================================================================--
@@ -704,6 +712,30 @@ task.spawn(function()
             })
         end
         task.wait(2)
+    end
+end)
+
+-- forward declare: dropdown de temas usa StopRGBThemes (definido no bloco RGB)
+local StopRGBThemes
+
+--============================================================================--
+--  SYNC FOV CIRCLE <-> JANELA
+--  (painel aberto + usuário quer círculo = desenha; painel fechado = esconde)
+--============================================================================--
+
+G._FovUserWants = Window.Flags and Window.Flags.FOVShowCircle or false
+
+task.spawn(function()
+    local wasHidden = nil
+    while not Window.unloaded do
+        local hidden = Window.hidden
+        if hidden ~= wasHidden then
+            wasHidden = hidden
+            if G._FovUserWants then
+                G.FOVShowCircle = not hidden
+            end
+        end
+        task.wait(0.2)
     end
 end)
 
@@ -779,12 +811,17 @@ TabHome:CreateToggle({
     callback = function(state) G.FOVEnabled = state end,
 })
 
+-- (o círculo agora sincroniza com a janela: abre = mostra, fecha = esconde.
+--  O toggle abaixo sobrescreve: OFF aqui = nunca mostra, mesmo com painel aberto)
 TabHome:CreateToggle({
     name = "Mostrar Círculo",
-    description = "Desenha o círculo de FOV na tela (precisa de Drawing API).",
-    value = true,
+    description = "Desenha o círculo de FOV na tela (precisa de Drawing API). Sincroniza com o painel: abre = mostra, fecha = esconde.",
+    value = false,
     flag = "FOVShowCircle",
-    callback = function(state) G.FOVShowCircle = state end,
+    callback = function(state)
+        G._FovUserWants = state
+        G.FOVShowCircle = state and not Window.hidden
+    end,
 })
 
 TabHome:CreateSlider({
@@ -1024,6 +1061,12 @@ local SpectateDropdown = TabVisual:CreateDropdown({
     flag = "SpectateTarget",
     callback = function(option)
         SelectedPlayerToView = Players:FindFirstChild(option)
+        G.SpectateTargetName = option
+        -- se o highlight já estiver ligado, re-aplica no novo alvo
+        if G.TargetHighlightEnabled then
+            G.toggleTargetHighlight(false)
+            G.toggleTargetHighlight(true)
+        end
     end,
 })
 
@@ -1059,6 +1102,13 @@ TabVisual:CreateToggle({
     description = "Highlight no jogador selecionado em 'Selecione o Player' (Visual).",
     flag = "TargetHighlight",
     callback = function(state) G.toggleTargetHighlight(state) end,
+})
+
+TabVisual:CreateColorPicker({
+    name = "Highlight Cor",
+    color = Color3.fromRGB(255, 80, 80),
+    flag = "TargetHighlightColor",
+    callback = function(color) G.setTargetHighlightColor(color) end,
 })
 
 TabVisual:CreateToggle({
@@ -1909,6 +1959,50 @@ TabUtility:CreateToggle({
 --  TAB: EXPLOITS
 --============================================================================--
 
+-- ===== Exploits Locais (novos) =====
+TabExploits:CreateSection({ name = "Exploits Locais" })
+
+TabExploits:CreateButton({
+    name = "Bring All",
+    description = "Teleporta todos os jogadores até você.",
+    callback = function() G.bringAll() end,
+})
+
+TabExploits:CreateButton({
+    name = "Fling All",
+    description = "Arremessa todos os jogadores de uma vez.",
+    callback = function() G.flingAll() end,
+})
+
+TabExploits:CreateSlider({
+    name = "Fling All Power",
+    range = { 1000, 50000 },
+    increment = 500,
+    value = 9000,
+    flag = "FlingAllPower",
+    callback = function(value) G.FlingAllPower = value end,
+})
+
+local ToggleBTools = TabExploits:CreateToggle({
+    name = "BTools",
+    description = "Ferramentas de construção (client-side): Delete, Clone, Grab.",
+    flag = "BTools",
+    callback = function(state) G.toggleBTools(state) end,
+})
+
+local ToggleMapInvis = TabExploits:CreateToggle({
+    name = "Mapa Invisível",
+    description = "Torna o mapa transparente (só pra você), com restore.",
+    flag = "MapInvisible",
+    callback = function(state) G.toggleMapInvisible(state) end,
+})
+
+TabExploits:CreateButton({
+    name = "Reset Rápido",
+    description = "Mata seu personagem na hora (respawn).",
+    callback = function() G.quickReset() end,
+})
+
 TabExploits:CreateSection({ name = "Fling" })
 
 local DropFlingTarget = TabExploits:CreateDropdown({
@@ -2051,7 +2145,11 @@ TabThemes:CreateDropdown({
     end)(),
     placeholder = "Selecione...",
     flag = "tema_selecionado",
-    callback = function(option) Window:ChangeTheme(Themes[option]) end,
+    callback = function(option)
+        StopRGBThemes()
+        LastAppliedTheme = Themes[option]
+        Window:ChangeTheme(Themes[option])
+    end,
 })
 
 TabThemes:CreateDropdown({
@@ -2073,88 +2171,174 @@ TabThemes:CreateDropdown({
     end,
 })
 
--- Animação do gradiente da janela (nativo do Rayfield)
-TabThemes:CreateSection({ name = "Animações" })
+-- ===== RGB THEMES (aplica direto nos themeProperties, 30fps, sem tween) =====
+local RGBThemeRunning = false
+local RGBThemeGeneration = 0
+local RGBThemeTargets = nil
 
-TabThemes:CreateToggle({
-    name = "Animação de Fundo (Janela)",
-    description = "O gradiente da janela fica vivo, derivando de lado a lado.",
-    value = false,
-    flag = "live_animation",
-    callback = function(state)
-        Window:ChangeTheme({ LiveAnimation = state })
-    end,
+StopRGBThemes = function()
+    if not RGBThemeRunning then return end
+    RGBThemeRunning = false
+    RGBThemeGeneration += 1
+    -- restaura o último tema aplicado (sem isso, elementos ficavam presos na última cor)
+    Window:ChangeTheme(LastAppliedTheme)
+end
+
+local function BuildRGBThemeTargets()
+    if RGBThemeTargets then return RGBThemeTargets end
+    RGBThemeTargets = {}
+    -- ChangeTheme() cria tween de 0.5s por propriedade; pro RGB aplicamos
+    -- direto nos instances cacheados (rápido, sem sobreposição de tweens)
+    local rgbKeys = {
+        AccentColor = true,
+        ElementGradient = true,
+        ElementStroke = true,
+        WindowColor = true,
+    }
+    for instance, properties in pairs(Window.themeProperties) do
+        if instance and instance.Parent then
+            for property, source in pairs(properties) do
+                local key = if typeof(source) == "table" then source[1] else source
+                if rgbKeys[key] then
+                    table.insert(RGBThemeTargets, {
+                        instance = instance,
+                        property = property,
+                        source = source,
+                    })
+                end
+            end
+        end
+    end
+    return RGBThemeTargets
+end
+
+local function ApplyRGBColor(color)
+    local targets = BuildRGBThemeTargets()
+    Window.theme.AccentColor = color
+    Window.theme.ElementGradient = ColorSequence.new(color)
+    Window.theme.ElementStroke = color
+    local windowColor = if Window.hidden then ColorSequence.new(color) else ColorSequence.new(Color3.fromRGB(0, 0, 0))
+    Window.theme.WindowColor = windowColor
+    for i = #targets, 1, -1 do
+        local target = targets[i]
+        local instance = target.instance
+        if not instance or not instance.Parent then
+            table.remove(targets, i)
+        else
+            local source = target.source
+            local key = if typeof(source) == "table" then source[1] else source
+            local themeValue = Window.theme[key]
+            local value = if typeof(source) == "table" then source[2](themeValue) else themeValue
+            instance[target.property] = value
+        end
+    end
+end
+
+local function StartRGBTheme(brightness)
+    StopRGBThemes()
+    RGBThemeRunning = true
+    RGBThemeGeneration += 1
+    local generation = RGBThemeGeneration
+    local hue = 0
+    Window:ChangeTheme({
+        WindowColor = Color3.fromRGB(0, 0, 0),
+        ContentColor = Color3.fromRGB(230, 230, 230),
+        AccentColor = Color3.fromHSV(hue, 1, brightness),
+        ElementGradient = Color3.fromHSV(hue, 1, brightness),
+        ElementStroke = Color3.fromHSV(hue, 1, brightness),
+        LiveAnimation = false,
+    })
+    task.spawn(function()
+        local UPDATE_INTERVAL = 1 / 30
+        local HUE_SPEED = 0.12
+        while RGBThemeRunning and RGBThemeGeneration == generation and not Window.unloaded do
+            hue = (hue + HUE_SPEED * UPDATE_INTERVAL) % 1
+            ApplyRGBColor(Color3.fromHSV(hue, 1, brightness))
+            task.wait(UPDATE_INTERVAL)
+        end
+    end)
+end
+
+TabThemes:CreateSection({ name = "RGB Themes" })
+
+TabThemes:CreateButton({
+    name = "RGB Rainbow",
+    description = "Ciclo RGB completo com brilho elevado.",
+    callback = function() StartRGBTheme(0.85) end,
 })
 
--- Fundo animado atrás do hub (partículas customizáveis)
-TabThemes:CreateSection({ name = "Fundo Custom (BG)" })
-
-TabThemes:CreateToggle({
-    name = "Fundo Animado",
-    description = "Partículas + gradiente atrás de toda a tela (atrás do hub).",
-    flag = "CustomBg",
-    callback = function(state) G.toggleCustomBg(state) end,
+TabThemes:CreateButton({
+    name = "RGB Dark Rainbow",
+    description = "Ciclo RGB com brilho reduzido, estética escura.",
+    callback = function() StartRGBTheme(0.45) end,
 })
 
-TabThemes:CreateColorPicker({
-    name = "Cor do Fundo",
-    color = Color3.fromRGB(130, 90, 255),
-    flag = "CustomBgColor",
-    callback = function(color) G.setCustomBgColor(color) end,
-})
-
-TabThemes:CreateSlider({
-    name = "Velocidade das Partículas",
-    range = { 0.5, 3 },
-    increment = 0.1,
-    value = 1,
-    flag = "CustomBgSpeed",
-    callback = function(value) G.setCustomBgSpeed(value) end,
-})
-
--- Tema personalizado: monta um tema com suas cores
-TabThemes:CreateSection({ name = "Tema Personalizado" })
-
-local CustomAccent = Color3.fromRGB(138, 43, 226)
-local CustomWindow = Color3.fromRGB(18, 14, 26)
-local CustomText   = Color3.fromRGB(240, 240, 255)
-
-TabThemes:CreateColorPicker({
-    name = "Cor de Destaque (Accent)",
-    color = CustomAccent,
-    flag = "CustomAccent",
-    callback = function(color)
-        CustomAccent = color
-        Window:ChangeTheme({
-            AccentColor = CustomAccent,
-            AccentStroke = CustomAccent,
+TabThemes:CreateButton({
+    name = "Desativar RGB",
+    description = "Interrompe o ciclo RGB e restaura o tema.",
+    callback = function()
+        StopRGBThemes()
+        Window:Notify({
+            title = "RGB Themes",
+            content = "Ciclo RGB desativado.",
+            duration = 2,
         })
     end,
 })
 
-TabThemes:CreateColorPicker({
-    name = "Cor da Janela",
-    color = CustomWindow,
-    flag = "CustomWindow",
-    callback = function(color)
-        CustomWindow = color
-        Window:ChangeTheme({ WindowColor = CustomWindow })
-    end,
-})
+-- ===== FONTS =====
+local OriginalFont = Window.theme.Font
+local OriginalTitleFont = Window.theme.TitleFont
 
-TabThemes:CreateColorPicker({
-    name = "Cor do Texto",
-    color = CustomText,
-    flag = "CustomText",
-    callback = function(color)
-        CustomText = color
-        Window:ChangeTheme({ ContentColor = CustomText })
-    end,
-})
+local FontNames = {
+    "Gotham", "GothamBold", "GothamBlack", "SourceSans", "SourceSansBold",
+    "Code", "SciFi", "Arcade", "Fantasy", "Cartoon", "Antique", "Bangers",
+    "Creepster", "FredokaOne", "JosefinSans", "Michroma", "Nunito", "Oswald",
+    "Roboto", "RobotoMono", "SpecialElite", "Ubuntu",
+}
 
-TabThemes:CreateText({
-    name = "Fontes",
-    text = "Em breve - customização de fonte e textos.",
+local function GetAvailableFonts()
+    local options = { "Original" }
+    for _, fontName in ipairs(FontNames) do
+        local ok, enumFont = pcall(function() return Enum.Font[fontName] end)
+        if ok and enumFont then table.insert(options, fontName) end
+    end
+    return options
+end
+
+TabThemes:CreateSection({ name = "Fonts" })
+
+TabThemes:CreateDropdown({
+    name = "Fonte",
+    description = "Altera a fonte global do RoyalHub (títulos e elementos).",
+    options = GetAvailableFonts(),
+    value = "Original",
+    flag = "font_selecionada",
+    callback = function(option)
+        if option == "Original" then
+            Window:ChangeTheme({ Font = OriginalFont, TitleFont = OriginalTitleFont })
+            return
+        end
+        local okEnum, enumFont = pcall(function() return Enum.Font[option] end)
+        if not okEnum or not enumFont then
+            Window:Notify({
+                title = "Fonts",
+                content = "A fonte selecionada nao esta disponivel neste ambiente.",
+                duration = 3,
+            })
+            return
+        end
+        local okFont, selectedFont = pcall(function() return Font.fromEnum(enumFont) end)
+        if not okFont or not selectedFont then
+            Window:Notify({
+                title = "Fonts",
+                content = "Nao foi possivel converter a fonte selecionada.",
+                duration = 3,
+            })
+            return
+        end
+        Window:ChangeTheme({ Font = selectedFont, TitleFont = selectedFont })
+    end,
 })
 
 

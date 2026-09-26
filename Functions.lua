@@ -40,7 +40,7 @@ G.FlyConn = nil; G.FlyBV = nil; G.FlyBG = nil
 G.AimbotEnabled     = { normal = false, rage = false }
 G.FOVEnabled        = true     -- aimbot só pega alvo dentro do círculo
 G.FOVRadius         = 120      -- raio em PIXELS
-G.FOVShowCircle     = true     -- desenhar o círculo na tela
+G.FOVShowCircle     = false    -- OFF no boot: a UI liga junto com o painel
 G.FOVColor          = Color3.fromRGB(255, 255, 255)
 G.FOVThickness      = 1
 G.AimbotConns       = {}
@@ -727,14 +727,14 @@ local function _ensureFovCircle()
 end
 
 local function _updateFovCircle()
-    local circle = _ensureFovCircle()
-    if not circle then return end
-    -- aparece sempre que "Mostrar Círculo" está ligado,
-    -- independente do aimbot estar ativo ou não
+    -- desligado? esconde (se existir) e NEM CRIA o Drawing
+    -- -> círculo nunca existe antes da UI carregar
     if not G.FOVShowCircle then
-        circle.Visible = false
+        if G.FovCircle then G.FovCircle.Visible = false end
         return
     end
+    local circle = _ensureFovCircle()
+    if not circle then return end
     local cam = workspace.CurrentCamera
     local vp  = cam.ViewportSize
     circle.Position  = Vector2.new(vp.X / 2, vp.Y / 2)
@@ -1901,167 +1901,93 @@ function G.toggleChams(enabled)
 end
 
 ------------------------------------------------------------------------
--- CUSTOM BG (fundo animado atrás do hub — partículas em ScreenGui)
+-- EXPLOITS LOCAIS (Bring All, Fling All, BTools, Mapa Invisível, Reset)
 ------------------------------------------------------------------------
-G.CustomBgEnabled = false; G.CustomBgGui = nil; G.CustomBgColor = Color3.fromRGB(130, 90, 255)
-G.CustomBgSpeed  = 1
 
-function G.toggleCustomBg(enabled)
-    G.CustomBgEnabled = enabled
-    if G.CustomBgGui then G.CustomBgGui:Destroy() G.CustomBgGui = nil end
-    if not enabled then return end
-
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "RoyalHubBG"
-    gui.ResetOnSpawn = false
-    gui.DisplayOrder = -10          -- fica ATRÁS do hub
-    local ok = pcall(function() gui.Parent = game:GetService("CoreGui") end)
-    if not ok then gui.Parent = LP:WaitForChild("PlayerGui") end
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
-    frame.BackgroundTransparency = 0.25
-    frame.BorderSizePixel = 0
-    frame.Parent = gui
-
-    -- gradiente animado
-    local grad = Instance.new("UIGradient")
-    grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,   G.CustomBgColor),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 12, 40)),
-        ColorSequenceKeypoint.new(1,   G.CustomBgColor),
-    })
-    grad.Rotation = 45
-    grad.Parent = frame
-
-    -- partículas: quadradinhos flutuando
-    local parts = {}
-    for i = 1, 24 do
-        local p = Instance.new("Frame")
-        p.Size = UDim2.fromOffset(math.random(2, 5), math.random(2, 5))
-        p.Position = UDim2.fromScale(math.random(), math.random())
-        p.BackgroundColor3 = G.CustomBgColor
-        p.BackgroundTransparency = math.random(30, 70) / 100
-        p.BorderSizePixel = 0
-        p.Rotation = math.random(0, 360)
-        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
-        p.Parent = frame
-        table.insert(parts, p)
+-- BRING ALL: teleporta todos os jogadores até você
+function G.bringAll()
+    local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local tr  = p.Character:FindFirstChild("HumanoidRootPart")
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if tr and hum and hum.Health > 0 then
+                pcall(function()
+                    tr.CFrame = myRoot.CFrame * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
+                end)
+            end
+        end
     end
+end
 
-    -- loop de animação
-    task.spawn(function()
-        while G.CustomBgEnabled and gui.Parent do
-            local dt = task.wait(0.03)
-            grad.Rotation = (grad.Rotation + 12 * dt * G.CustomBgSpeed) % 360
-            for _, p in ipairs(parts) do
-                if p.Parent then
-                    local x = p.Position.X.Scale + (math.random(-10, 10) / 1000) * G.CustomBgSpeed
-                    local y = p.Position.Y.Scale - (math.random(1, 8) / 1000) * G.CustomBgSpeed
-                    if y < -0.05 then y = 1.05 end
-                    p.Position = UDim2.fromScale(x, y)
+-- FLING ALL: arremessa todos os jogadores
+G.FlingAllPower = 9000
+function G.flingAll(power)
+    local vel = power or G.FlingAllPower
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            local tr  = p.Character:FindFirstChild("HumanoidRootPart")
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if tr and hum and hum.Health > 0 then
+                pcall(function()
+                    tr.AssemblyLinearVelocity =
+                        Vector3.new(math.random(-10, 10), 10, math.random(-10, 10)).Unit * vel
+                end)
+            end
+        end
+    end
+end
+
+-- BTOOLS (client-side, HopperBins na Backpack)
+G.BToolsEnabled = false; G.BToolsBins = {}
+function G.toggleBTools(enabled)
+    G.BToolsEnabled = enabled
+    for _, b in pairs(G.BToolsBins) do pcall(function() b:Destroy() end) end
+    G.BToolsBins = {}
+    if not enabled then return end
+    local backpack = LP:FindFirstChildOfClass("Backpack")
+    if not backpack then return end
+    for _, binType in ipairs({ Enum.BinType.Tool, Enum.BinType.Clone, Enum.BinType.Delete, Enum.BinType.Grab }) do
+        local ok, bin = pcall(function()
+            local b = Instance.new("HopperBin")
+            b.BinType = binType
+            b.Parent = backpack
+            return b
+        end)
+        if ok and bin then table.insert(G.BToolsBins, bin) end
+    end
+end
+
+-- MAPA INVISÍVEL (client-side, com restore)
+G.MapInvisibleEnabled = false; G.MapInvisibleParts = {}
+function G.toggleMapInvisible(enabled)
+    G.MapInvisibleEnabled = enabled
+    if enabled then
+        local myChar = LP.Character
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Transparency < 1 then
+                if not (myChar and obj:IsDescendantOf(myChar)) then
+                    obj.LocalTransparencyModifier = 1
+                    table.insert(G.MapInvisibleParts, obj)
                 end
             end
         end
-    end)
-
-    G.CustomBgGui = gui
-end
-
-function G.setCustomBgColor(c)
-    G.CustomBgColor = c
-    if G.CustomBgGui then
-        -- recria com a cor nova (jeito simples e seguro)
-        G.toggleCustomBg(false)
-        G.toggleCustomBg(true)
-    end
-end
-
-function G.setCustomBgSpeed(v)
-    G.CustomBgSpeed = v
-end
-
-------------------------------------------------------------------------
--- CUSTOM BG (fundo animado atrás do hub — partículas em ScreenGui)
-------------------------------------------------------------------------
-G.CustomBgEnabled = false; G.CustomBgGui = nil; G.CustomBgColor = Color3.fromRGB(130, 90, 255)
-G.CustomBgSpeed  = 1
-
-function G.toggleCustomBg(enabled)
-    G.CustomBgEnabled = enabled
-    if G.CustomBgGui then G.CustomBgGui:Destroy() G.CustomBgGui = nil end
-    if not enabled then return end
-
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "RoyalHubBG"
-    gui.ResetOnSpawn = false
-    gui.DisplayOrder = -10          -- fica ATRÁS do hub
-    local ok = pcall(function() gui.Parent = game:GetService("CoreGui") end)
-    if not ok then gui.Parent = LP:WaitForChild("PlayerGui") end
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
-    frame.BackgroundTransparency = 0.25
-    frame.BorderSizePixel = 0
-    frame.Parent = gui
-
-    -- gradiente animado
-    local grad = Instance.new("UIGradient")
-    grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,   G.CustomBgColor),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 12, 40)),
-        ColorSequenceKeypoint.new(1,   G.CustomBgColor),
-    })
-    grad.Rotation = 45
-    grad.Parent = frame
-
-    -- partículas: bolinhas flutuando
-    local parts = {}
-    for i = 1, 24 do
-        local p = Instance.new("Frame")
-        p.Size = UDim2.fromOffset(math.random(2, 5), math.random(2, 5))
-        p.Position = UDim2.fromScale(math.random(), math.random())
-        p.BackgroundColor3 = G.CustomBgColor
-        p.BackgroundTransparency = math.random(30, 70) / 100
-        p.BorderSizePixel = 0
-        p.Rotation = math.random(0, 360)
-        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
-        p.Parent = frame
-        table.insert(parts, p)
-    end
-
-    -- loop de animação
-    task.spawn(function()
-        while G.CustomBgEnabled and gui.Parent do
-            local dt = task.wait(0.03)
-            grad.Rotation = (grad.Rotation + 12 * dt * G.CustomBgSpeed) % 360
-            for _, p in ipairs(parts) do
-                if p.Parent then
-                    local x = p.Position.X.Scale + (math.random(-10, 10) / 1000) * G.CustomBgSpeed
-                    local y = p.Position.Y.Scale - (math.random(1, 8) / 1000) * G.CustomBgSpeed
-                    if y < -0.05 then y = 1.05 end
-                    p.Position = UDim2.fromScale(x, y)
-                end
-            end
+    else
+        for _, obj in ipairs(G.MapInvisibleParts) do
+            pcall(function() obj.LocalTransparencyModifier = 0 end)
         end
-    end)
-
-    G.CustomBgGui = gui
-end
-
-function G.setCustomBgColor(c)
-    G.CustomBgColor = c
-    if G.CustomBgEnabled then
-        -- recria com a cor nova (jeito simples e seguro)
-        G.toggleCustomBg(false)
-        G.toggleCustomBg(true)
+        G.MapInvisibleParts = {}
     end
 end
 
-function G.setCustomBgSpeed(v)
-    G.CustomBgSpeed = v
+-- RESET RÁPIDO (morte instantânea)
+function G.quickReset()
+    local char = LP.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.Health = 0 end
+    pcall(function() char:BreakJoints() end)
 end
 
 ------------------------------------------------------------------------
@@ -2114,7 +2040,8 @@ function G.unloadAll()
     pcall(function() G.toggleThirdPerson(false) end)
     pcall(function() G.toggleTargetHighlight(false) end)
     pcall(function() G.toggleChams(false) end)
-    pcall(function() G.toggleCustomBg(false) end)
+    pcall(function() G.toggleBTools(false) end)
+    pcall(function() G.toggleMapInvisible(false) end)
 
     -- 2) estado que não tem toggle off dedicado
     G.SpinEnabled = false
