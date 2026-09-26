@@ -1158,7 +1158,7 @@ local function _radarBuild()
     arrow.Parent = root
     -- tenta o PNG local (flecha branca); fallback = triângulo com UICorner
     local okArrow = pcall(function()
-        local p = ICON_DIR_ARROW or "royalhub_icons/arrow.png"
+        local p = "royalhub_icons/arrow.png"
         if isfile(p) then
             arrow.Image = getcustomasset(p)
         else
@@ -1867,7 +1867,7 @@ G.EspInfoEnabled   = false
 G._Esp2dConn       = nil
 G._Esp2dByPlayer   = {}   -- [player] = { box1..8, hpBg, hpFill, nameTxt, distTxt }
 
-local function _esp2dObj(p, key, class)
+local function _esp2dObj(p, key, class, staticProps)
     local data = G._Esp2dByPlayer[p]
     if not data then
         data = {}
@@ -1876,6 +1876,15 @@ local function _esp2dObj(p, key, class)
     if data[key] then return data[key] end
     local ok, o = pcall(Drawing.new, class)
     if not ok then return nil end
+    -- propriedades ESTÁTICAS (Size/Center/Outline/Thickness) só na CRIAÇÃO:
+    -- mudá-las por frame força re-render do Drawing e alguns executores
+    -- descartam a Position pendente (bug que fazia o texto "pular" pra
+    -- posição errada). Position sempre por último, por frame.
+    if staticProps then
+        for k, v in pairs(staticProps) do
+            pcall(function() o[k] = v end)
+        end
+    end
     data[key] = o
     return o
 end
@@ -1980,13 +1989,12 @@ local function _esp2dStart()
                                 { "box7", maxX, maxY, maxX - cl, maxY }, { "box8", maxX, maxY, maxX, maxY - cl },
                             }
                             for _, seg in ipairs(segs) do
-                                local line = _esp2dObj(p, seg[1], "Line")
+                                local line = _esp2dObj(p, seg[1], "Line", { Thickness = 1 })
                                 if line then
-                                    line.Visible   = true
-                                    line.From      = Vector2.new(seg[2], seg[3])
-                                    line.To        = Vector2.new(seg[4], seg[5])
-                                    line.Color     = G.EspBoxColor or Color3.new(1, 1, 1)
-                                    line.Thickness = 1
+                                    line.Visible = true
+                                    line.From    = Vector2.new(seg[2], seg[3])
+                                    line.To      = Vector2.new(seg[4], seg[5])
+                                    line.Color   = G.EspBoxColor or Color3.new(1, 1, 1)
                                 end
                             end
                         else
@@ -1997,21 +2005,19 @@ local function _esp2dStart()
                         if G.EspHealthEnabled then
                             local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                             local bx = minX - 6
-                            local hpBg = _esp2dObj(p, "hpBg", "Line")
+                            local hpBg = _esp2dObj(p, "hpBg", "Line", { Thickness = 3 })
                             if hpBg then
-                                hpBg.Visible   = true
-                                hpBg.From      = Vector2.new(bx, minY)
-                                hpBg.To        = Vector2.new(bx, maxY)
-                                hpBg.Color     = Color3.fromRGB(30, 30, 30)
-                                hpBg.Thickness = 3
+                                hpBg.Visible = true
+                                hpBg.From    = Vector2.new(bx, minY)
+                                hpBg.To      = Vector2.new(bx, maxY)
+                                hpBg.Color   = Color3.fromRGB(30, 30, 30)
                             end
-                            local hpFill = _esp2dObj(p, "hpFill", "Line")
+                            local hpFill = _esp2dObj(p, "hpFill", "Line", { Thickness = 3 })
                             if hpFill then
-                                hpFill.Visible   = true
-                                hpFill.From      = Vector2.new(bx, maxY)
-                                hpFill.To        = Vector2.new(bx, maxY - h * hp)
-                                hpFill.Color     = _esp2dHealthColor(hp)
-                                hpFill.Thickness = 3
+                                hpFill.Visible = true
+                                hpFill.From    = Vector2.new(bx, maxY)
+                                hpFill.To      = Vector2.new(bx, maxY - h * hp)
+                                hpFill.Color   = _esp2dHealthColor(hp)
                             end
                         else
                             _esp2dHideKeys(p, HP_KEYS)
@@ -2022,26 +2028,24 @@ local function _esp2dStart()
                         --      têm "Head" visível; usa minX/maxX já calculados) =====
                         if G.EspInfoEnabled then
                             local cx = (minX + maxX) / 2
-                            local nameTxt = _esp2dObj(p, "nameTxt", "Text")
+                            local nameTxt = _esp2dObj(p, "nameTxt", "Text", {
+                                Size = 16, Center = true, Outline = true,
+                            })
                             if nameTxt then
-                                nameTxt.Visible   = true
-                                nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
-                                nameTxt.Position  = Vector2.new(cx, minY - 24)
-                                nameTxt.Size      = 16
-                                nameTxt.Center    = true
-                                nameTxt.Outline   = true
-                                nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
+                                nameTxt.Visible = true
+                                nameTxt.Text    = (p.DisplayName ~= "" and p.DisplayName or p.Name)
+                                nameTxt.Color   = G.EspInfoColor or Color3.new(1, 1, 1)
+                                nameTxt.Position = Vector2.new(cx, minY - 24)  -- POR ÚLTIMO
                             end
-                            local distTxt = _esp2dObj(p, "distTxt", "Text")
+                            local distTxt = _esp2dObj(p, "distTxt", "Text", {
+                                Size = 13, Center = true, Outline = true,
+                            })
                             if distTxt then
                                 local dist = math.floor((camPos - root.Position).Magnitude)
-                                distTxt.Visible   = true
-                                distTxt.Text      = dist .. "m"
-                                distTxt.Position  = Vector2.new(cx, maxY + 4)
-                                distTxt.Size      = 13
-                                distTxt.Center    = true
-                                distTxt.Outline   = true
-                                distTxt.Color     = Color3.fromRGB(200, 200, 200)
+                                distTxt.Visible = true
+                                distTxt.Text    = dist .. "m"
+                                distTxt.Color   = Color3.fromRGB(200, 200, 200)
+                                distTxt.Position = Vector2.new(cx, maxY + 4)  -- POR ÚLTIMO
                             end
                         else
                             _esp2dHideKeys(p, INFO_KEYS)
