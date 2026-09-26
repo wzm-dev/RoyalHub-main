@@ -1804,29 +1804,64 @@ TabMisc:CreateButton({
     end,
 })
 
-local DropTroll = TabMisc:CreateDropdown({
+-- Troll Audios (IDs públicos pós-2022 — funcionam de verdade)
+local trollOptions = {}
+for _, audio in ipairs(G.TrollAudios or {}) do
+    table.insert(trollOptions, audio.Title)
+end
+
+local SelectedTrollAudio = nil
+TabMisc:CreateDropdown({
     name = "IDs Troll Prontos",
-    options = {},
+    description = "20 audios clássicos (vine boom, crab rave, phonk...).",
+    options = trollOptions,
     placeholder = "Selecione...",
     flag = "TrollAudio",
-    callback = function(selected) end,
-})
-DropTroll:Lock("Em manutenção")
-
-local SliderVolume = TabMisc:CreateSlider({
-    name = "Volume",
-    range = { 1, 20 }, increment = 1, value = 5,
-    flag = "TrollVolume",
-    callback = function(value) _currentVolume = value end,
-})
-SliderVolume:Lock("Em manutenção.")
-
-local BtnPlayGlobal = TabMisc:CreateButton({
-    name = "Tocar Global",
-    callback = function()
+    callback = function(option)
+        for _, audio in ipairs(G.TrollAudios or {}) do
+            if audio.Title == option then SelectedTrollAudio = audio.id end
+        end
     end,
 })
-BtnPlayGlobal:Lock("Em manutenção.")
+
+TabMisc:CreateSlider({
+    name = "Troll Volume",
+    range = { 1, 20 }, increment = 1, value = 5,
+    flag = "TrollVolume",
+    callback = function(value) G.TrollVolume = value end,
+})
+
+TabMisc:CreateButton({
+    name = "Tocar Áudio (Só Você)",
+    description = "Toca localmente — funciona em qualquer jogo.",
+    callback = function()
+        if SelectedTrollAudio then
+            G.playTrollLocal(SelectedTrollAudio, G.TrollVolume)
+        else
+            Window:Notify({ title = "Audio", content = "Selecione um áudio primeiro!", duration = 3 })
+        end
+    end,
+})
+
+TabMisc:CreateButton({
+    name = "Tocar na Boombox",
+    description = "Toca no Sound da ferramenta equipada (precisa de boombox/radio).",
+    callback = function()
+        if SelectedTrollAudio then
+            local ok = G.playTrollBoombox(SelectedTrollAudio, G.TrollVolume)
+            if not ok then
+                Window:Notify({ title = "Audio", content = "Nenhuma ferramenta com Sound equipada!", duration = 3 })
+            end
+        else
+            Window:Notify({ title = "Audio", content = "Selecione um áudio primeiro!", duration = 3 })
+        end
+    end,
+})
+
+TabMisc:CreateButton({
+    name = "Parar Áudio",
+    callback = function() G.stopTrollAudio() end,
+})
 
 --============================================================================--
 --  TAB: MISC — Utilidades
@@ -2085,12 +2120,30 @@ BtnFlingPlayer:Lock("Em manutenção.")
 
 local ToggleSpyChat = TabExploits:CreateToggle({
     name = "SpyChat",
-    description = "Espiona TODOS chats privados/DMs.",
+    description = "Loga as mensagens do chat de todos os jogadores (console abaixo).",
     flag = "SpyChat",
+    callback = function(state) G.toggleSpyChat(state) end,
+})
+
+local spyConsole = TabExploits:CreateConsole({
+    name = "Chat Spy",
+    height = 150,
+    follow = true,
+    maxLines = 300,
+})
+
+-- canal: o Functions chama esta função pra cada mensagem capturada
+G.setSpyChatCallback(function(playerName, message)
+    spyConsole:Append("[" .. playerName .. "]: " .. message)
+end)
+
+TabExploits:CreateButton({
+    name = "Limpar Chat Spy",
     callback = function()
+        G.clearSpyChatLog()
+        spyConsole:Clear()
     end,
 })
-ToggleSpyChat:Lock("Em manutenção.")
 
 --============================================================================--
 --  TAB: EXPLOITS — BrookHaven / King-Legacy / Universais

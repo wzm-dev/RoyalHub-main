@@ -354,7 +354,7 @@ function G.toggleEspLines(enabled)
         line.Visible = false
         line.Color = Color3.fromRGB(255,55,55)
         line.Thickness = 1
-        line.Transparency = 0.4
+        line.Transparency = 0        -- 0 = totalmente opaco
         perPlayer[p] = line
         return line
     end
@@ -721,7 +721,7 @@ local function _ensureFovCircle()
     circle.Radius        = G.FOVRadius
     circle.Visible       = false
     circle.Color         = Color3.fromRGB(255, 255, 255)
-    circle.Transparency  = 0.4
+    circle.Transparency  = 0.1
     G.FovCircle = circle
     return circle
 end
@@ -1638,7 +1638,7 @@ function G.toggleEspBones(enabled)
                                     line.To        = Vector2.new(sb.X, sb.Y)
                                     line.Color     = G.EspBonesColor
                                     line.Thickness = G.EspBonesWidth
-                                    line.Transparency = 0.2
+                                    line.Transparency = 0
                                 else
                                     line.Visible = false
                                 end
@@ -1970,6 +1970,166 @@ function G.setTargetHighlightColor(c)
 end
 
 ------------------------------------------------------------------------
+-- SPYCHAT (funcional: suporta TextChatService novo E o Chatted legacy)
+------------------------------------------------------------------------
+G.SpyChatEnabled = false
+G.SpyChatConns   = {}
+G.SpyChatLog     = {}      -- {player, message, time}
+G.SpyChatCallback = nil    -- UI registra aqui pra receber as msgs
+
+local function _spychatPush(playerName, message)
+    table.insert(G.SpyChatLog, {
+        player = playerName,
+        message = message,
+        time = os.clock(),
+    })
+    if #G.SpyChatLog > 300 then table.remove(G.SpyChatLog, 1) end
+    if G.SpyChatCallback then
+        pcall(function() G.SpyChatCallback(playerName, message) end)
+    end
+end
+
+local function _hookLegacyChat(p)
+    if G.SpyChatConns[p] then return end
+    G.SpyChatConns[p] = p.Chatted:Connect(function(msg)
+        if G.SpyChatEnabled then _spychatPush(p.Name, msg) end
+    end)
+end
+
+function G.toggleSpyChat(enabled)
+    G.SpyChatEnabled = enabled
+    -- limpa conns antigos
+    for _, c in pairs(G.SpyChatConns) do pcall(function() c:Disconnect() end) end
+    G.SpyChatConns = {}
+    if not enabled then return end
+
+    -- 1) PLAYER.CHATTED (legacy — ainda dispara pra TODA mensagem em 99% dos jogos)
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p ~= LP then _hookLegacyChat(p) end
+    end
+    G.SpyChatConns["_playerAdded"] = S.Players.PlayerAdded:Connect(function(p)
+        _hookLegacyChat(p)
+    end)
+    G.SpyChatConns["_playerRemoving"] = S.Players.PlayerRemoving:Connect(function(p)
+        if G.SpyChatConns[p] then
+            G.SpyChatConns[p]:Disconnect()
+            G.SpyChatConns[p] = nil
+        end
+    end)
+
+    -- 2) TEXTCHATSERVICE (novo sistema — pega as mensagens que o legacy não vê)
+    local ok = pcall(function()
+        local TCS = game:GetService("TextChatService")
+        if TCS.ChatVersion ~= Enum.ChatVersion.TextChatService then return end
+        -- MessageReceived dispara pra TODAS mensagens (inclui as dos outros)
+        G.SpyChatConns["_tcs"] = TCS.MessageReceived:Connect(function(message)
+            if not G.SpyChatEnabled then return end
+            local status = message.Status
+            if status ~= nil and status ~= Enum.TextChatMessageStatus.Success then return end
+            local src = message.TextSource
+            if not src or src.UserId == LP.UserId then return end
+            local plr = S.Players:GetPlayerByUserId(src.UserId)
+            _spychatPush(plr and plr.Name or ("User:" .. src.UserId), message.Text)
+        end)
+        -- gambiarra historica: onPlayerChatted não existe no TCS client-side,
+        -- MessageReceived cobre. DisplaySystemMessageInChannel = /commands
+        G.SpyChatConns["_tcsChannels"] = TCS.MessageReceived:Connect(function(message)
+            if not G.SpyChatEnabled then return end
+            if message.TextSource == nil and message.Metadata == nil and message.PrefixText ~= nil then
+                -- system message com prefixo (ex: "PlayerName: " de chat tags custom)
+            end
+        end)
+    end)
+    if not ok then
+        -- jogo antigo sem TCS: o legacy Chatted já cobre
+    end
+end
+
+function G.setSpyChatCallback(fn)
+    G.SpyChatCallback = fn
+end
+
+function G.clearSpyChatLog()
+    G.SpyChatLog = {}
+end
+
+------------------------------------------------------------------------
+-- TROLL AUDIOS (IDs públicos pós-2022 — os antigos morreram no audio update)
+------------------------------------------------------------------------
+G.TrollAudios = {
+    { Title = "Vine Boom",              id = 6823153536 },
+    { Title = "Vine Boom (LOUD)",       id = 9068519840 },
+    { Title = "Miss the Rage",          id = 9124780123 },
+    { Title = "Crab Rave",              id = 5410086218 },
+    { Title = "Rick Roll (Phonk)",      id = 7363412529 },
+    { Title = "HEHEHE HA",              id = 8406005582 },
+    { Title = "Bing Chillin",           id = 7280017311 },
+    { Title = "Goofy Ahh Laugh",        id = 8418482985 },
+    { Title = "I Love Tacos Guy",       id = 9245561450 },
+    { Title = "Clash Royale Cry",       id = 8264520060 },
+    { Title = "Emotional DAMAGE!",      id = 8362816791 },
+    { Title = "FBI Open Up",            id = 1759712659 },
+    { Title = "Popcat",                 id = 6107957968 },
+    { Title = "Earrape",                id = 6953866301 },
+    { Title = "Phonk",                  id = 6911766512 },
+    { Title = "Henry Distraction",      id = 5616761718 },
+    { Title = "Mario Theme",            id = 6753817247 },
+    { Title = "Doomshop",               id = 6770303644 },
+    { Title = "Elevator Music",         id = 9119119619 },
+    { Title = "Sigma Phonk",            id = 7601924770 },
+}
+G.TrollVolume = 5
+G.TrollAudioPlaying = nil
+
+-- Toca só pra você (funciona em QUALQUER jogo — Sound no SoundService)
+function G.playTrollLocal(id, volume)
+    if not id then return end
+    if G.TrollAudioPlaying then
+        pcall(function() G.TrollAudioPlaying:Stop() end)
+        pcall(function() G.TrollAudioPlaying:Destroy() end)
+        G.TrollAudioPlaying = nil
+    end
+    local s = Instance.new("Sound")
+    s.SoundId = "rbxassetid://" .. id
+    s.Volume = volume or G.TrollVolume or 5
+    s.Parent = game:GetService("SoundService")
+    s:Play()
+    G.TrollAudioPlaying = s
+    s.Ended:Connect(function()
+        pcall(function() s:Destroy() end)
+        if G.TrollAudioPlaying == s then G.TrollAudioPlaying = nil end
+    end)
+    return s
+end
+
+function G.stopTrollAudio()
+    if G.TrollAudioPlaying then
+        pcall(function() G.TrollAudioPlaying:Stop() end)
+        pcall(function() G.TrollAudioPlaying:Destroy() end)
+        G.TrollAudioPlaying = nil
+    end
+end
+
+-- Toca na boombox EQUIPADA (client-side: o som sai do Tool, alguns jogos replicam)
+function G.playTrollBoombox(id, volume)
+    local char = LP.Character
+    if not char then return false end
+    for _, t in ipairs(char:GetChildren()) do
+        if t:IsA("Tool") then
+            local sound = t:FindFirstChildWhichIsA("Sound", true)
+            if sound then
+                sound.SoundId = "rbxassetid://" .. id
+                sound.Volume = volume or G.TrollVolume or 5
+                sound.Looped = true
+                sound:Play()
+                return true
+            end
+        end
+    end
+    return false
+end
+
+------------------------------------------------------------------------
 -- CHAMS SIMPLES (materiais ForceField coloridos em todos os inimigos)
 ------------------------------------------------------------------------
 G.ChamsEnabled = false; G.ChamsColor = Color3.fromRGB(0, 255, 170)
@@ -2142,6 +2302,8 @@ function G.unloadAll()
     pcall(function() G.toggleChams(false) end)
     pcall(function() G.toggleBTools(false) end)
     pcall(function() G.toggleEspBones(false) end)
+    pcall(function() G.toggleSpyChat(false) end)
+    pcall(function() G.stopTrollAudio() end)
     pcall(function() G.toggleMapInvisible(false) end)
 
     -- 2) estado que não tem toggle off dedicado
