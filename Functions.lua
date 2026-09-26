@@ -354,7 +354,6 @@ function G.toggleEspLines(enabled)
         line.Visible = false
         line.Color = Color3.fromRGB(255,55,55)
         line.Thickness = 1
-        line.Transparency = 0        -- 0 = totalmente opaco
         perPlayer[p] = line
         return line
     end
@@ -721,7 +720,6 @@ local function _ensureFovCircle()
     circle.Radius        = G.FOVRadius
     circle.Visible       = false
     circle.Color         = Color3.fromRGB(255, 255, 255)
-    circle.Transparency  = 0.1
     G.FovCircle = circle
     return circle
 end
@@ -1569,6 +1567,15 @@ end)
 ------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
+-- DRAWING OPACITY HELPER
+-- Executores divergem no Transparency do Drawing:
+--   padrão (sUNC/Synapse): 0 = opaco, 1 = invisível
+--   alguns (bug): tratam como opacity -> 0 = INVISÍVEL
+-- Solução robusta: NUNCA escrever Transparency (deixa o default do
+-- executor, que é sempre "opaco"), e compensar nitidez com Thickness.
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
 -- ESP BONES (esqueleto: linhas entre as juntas do rig, R6 e R15)
 ------------------------------------------------------------------------
 G.EspBonesEnabled   = false
@@ -1638,7 +1645,6 @@ function G.toggleEspBones(enabled)
                                     line.To        = Vector2.new(sb.X, sb.Y)
                                     line.Color     = G.EspBonesColor
                                     line.Thickness = G.EspBonesWidth
-                                    line.Transparency = 0
                                 else
                                     line.Visible = false
                                 end
