@@ -333,12 +333,6 @@ local Window = Rayfield:CreateWindow({
 })
 
 
-Window:Notify({
-    title   = "KeyBind",
-    content = "Tecla do menu: aba Settings do Rayfield (padrão: K).",
-    duration = 6,
-})
-
 print("========================= Royal Hub (Rayfield Gen2) carregado com sucesso! =========================")
 
 --============================================================================--
@@ -488,11 +482,6 @@ TabHome:CreateToggle({
     flag = "TeamCheck",
     callback = function(enabled)
         G.UseTeamCheck = enabled
-        Window:Notify({
-            title = "Team Check",
-            content = if enabled then "Ligado" else "Desligado",
-            duration = 2,
-        })
     end,
 })
 
@@ -502,11 +491,6 @@ TabHome:CreateToggle({
     flag = "WallCheck",
     callback = function(enabled)
         G.UseWallCheck = enabled
-        Window:Notify({
-            title = "Wall Check",
-            content = if enabled then "Ligado (só mira visível)" else "Desligado (mira através)",
-            duration = 2,
-        })
     end,
 })
 
@@ -536,11 +520,6 @@ local ToggleESP2 = TabHome:CreateToggle({
             G.toggleESP(false)
             ToggleESP:Set(false, true)
         end
-        Window:Notify({
-            title = "ESP 2.0",
-            content = if state then "Twilight ESP ativado!" else "Desativado.",
-            duration = 2,
-        })
     end,
 })
 ToggleESP2:Lock("Em desenvolvimento.")
@@ -1039,11 +1018,6 @@ local ToggleFarmLevel = TabFarm:CreateToggle({
     description = "Ativa o farm automático de level.",
     flag = "AutoFarmLevel",
     callback = function(state)
-        Window:Notify({
-            title = "Auto Farm Level",
-            content = if state then "Ativado!" else "Desativado!",
-            duration = 3,
-        })
     end,
 })
 ToggleFarmLevel:Lock("Em desenvolvimento.")
@@ -1055,11 +1029,6 @@ local ToggleFarmMaterials = TabFarm:CreateToggle({
     description = "Ativa o farm automático de materiais.",
     flag = "AutoFarmMaterials",
     callback = function(state)
-        Window:Notify({
-            title = "Auto Farm Materials",
-            content = if state then "Ativado!" else "Desativado!",
-            duration = 3,
-        })
     end,
 })
 ToggleFarmMaterials:Lock("Em desenvolvimento.")
@@ -1095,11 +1064,6 @@ local ToggleAutoBuy = TabShopping:CreateToggle({
     description = "Ativa a compra automática do item selecionado acima.",
     flag = "AutoBuy",
     callback = function(state)
-        Window:Notify({
-            title = "Auto Buy",
-            content = if state then "Ativado!" else "Desativado!",
-            duration = 3,
-        })
     end,
 })
 ToggleAutoBuy:Lock("Em desenvolvimento.")
@@ -1140,11 +1104,6 @@ TabTeleport:CreateSlider({
     flag = "LoopTPDelay",
     callback = function(value)
         G.LoopTPDelay = value
-        Window:Notify({
-            title = "Loop TP Delay",
-            content = "Atualizado para " .. value .. " segundos",
-            duration = 2,
-        })
     end,
 })
 
@@ -1332,7 +1291,6 @@ TabMisc:CreateSlider({
     callback = function(value)
         G.OrbitSpeed = value
         if G.OrbitEnabled then
-            Window:Notify({ title = "Orbit", content = "Velocidade atualizada para " .. tostring(value), duration = 2 })
         end
     end,
 })
@@ -1365,11 +1323,6 @@ local emoteLoopToggle = TabMisc:CreateToggle({
                 G.CurrentEmoteTrack:Stop(); G.CurrentEmoteTrack = nil
             end
         end
-        Window:Notify({
-            title = "Emote",
-            content = "Loop " .. (if state then "ativado!" else "desativado!"),
-            duration = 2,
-        })
     end,
 })
 
@@ -1407,11 +1360,6 @@ TabMisc:CreateButton({
         else
             track.Stopped:Connect(function() if track == G.CurrentEmoteTrack then G.CurrentEmoteTrack = nil end end)
         end
-        Window:Notify({
-            title = "Emote",
-            content = "Tocando " .. SelectedEmote .. (if G.LoopEmote then " em LOOP INFINITO!" else "!"),
-            duration = 3,
-        })
     end,
 })
 
@@ -1423,7 +1371,6 @@ TabMisc:CreateButton({
         if G.EmoteLoopConn then G.EmoteLoopConn:Disconnect(); G.EmoteLoopConn = nil end
         G.LoopEmote = false
         emoteLoopToggle:Set(false)
-        Window:Notify({ title = "Emote", content = "Emote e loop parados!", duration = 3 })
     end,
 })
 
@@ -1447,7 +1394,6 @@ SliderVolume:Lock("Em manutenção.")
 local BtnPlayGlobal = TabMisc:CreateButton({
     name = "Tocar Global",
     callback = function()
-        Window:Notify({ title = "Audio", content = "Em desenvolvimento.", duration = 2 })
     end,
 })
 BtnPlayGlobal:Lock("Em manutenção.")
@@ -1479,11 +1425,6 @@ TabMisc:CreateToggle({
     flag = "AntiKick",
     callback = function(state)
         G.AntiKickEnabled = state
-        Window:Notify({
-            title = "Anti-Kick",
-            content = if state then "Ativado!" else "Desativado.",
-            duration = 2,
-        })
     end,
 })
 
@@ -1494,11 +1435,13 @@ TabMisc:CreateToggle({
     callback = function(state)
         G.RemoteSpyEnabled = state
         if state then G.RemoteLogs = {} end
-        Window:Notify({
-            title = "Remote Spy",
-            content = if state then "Logando remotes no console..." else "Parado.",
-            duration = 2,
-        })
+        if state then
+            Window:Notify({
+                title = "Remote Spy",
+                content = "Logando remotes no console...",
+                duration = 2,
+            })
+        end
     end,
 })
 
@@ -1554,7 +1497,6 @@ TabMisc:CreateButton({
     callback = function()
         G.RemoteLogs = {}
         remoteConsole:Clear()
-        Window:Notify({ title = "Remote Spy", content = "Logs limpos.", duration = 2 })
     end,
 })
 
@@ -1638,7 +1580,6 @@ local ToggleSpyChat = TabExploits:CreateToggle({
     description = "Espiona TODOS chats privados/DMs.",
     flag = "SpyChat",
     callback = function()
-        Window:Notify({ title = "SpyChat", content = "Em desenvolvimento.", duration = 2 })
     end,
 })
 ToggleSpyChat:Lock("Em manutenção.")
@@ -1713,11 +1654,6 @@ TabSettings:CreateButton({
     description = "Tenta burlar o sistema anti-cheat do jogo.",
     callback = function()
         task.delay(2, function() NotifySound:Play() end)
-        Window:Notify({
-            title = "Aviso!",
-            content = "Bypass ativado com sucesso! (Funcionalidade em desenvolvimento)",
-            duration = 3,
-        })
     end,
 })
 
@@ -1805,11 +1741,6 @@ TabSettings:CreateKeybind({
         G.AimbotEnabled.normal = not G.AimbotEnabled.normal
         G.toggleAimbot("normal")
         ToggleAimbotNormal:Set(G.AimbotEnabled.normal, true)
-        Window:Notify({
-            title = "Aimbot Comum",
-            content = if G.AimbotEnabled.normal then "Ativado!" else "Desativado!",
-            duration = 2,
-        })
     end,
 })
 
@@ -1821,11 +1752,6 @@ TabSettings:CreateKeybind({
         G.AimbotEnabled.rage = not G.AimbotEnabled.rage
         G.toggleAimbot("rage")
         ToggleAimbotRage:Set(G.AimbotEnabled.rage, true)
-        Window:Notify({
-            title = "Aimbot Rage",
-            content = if G.AimbotEnabled.rage then "Ativado!" else "Desativado!",
-            duration = 2,
-        })
     end,
 })
 

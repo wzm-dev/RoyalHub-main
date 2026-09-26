@@ -122,12 +122,10 @@ G.AlreadyJoined     = {}
 ------------------------------------------------------------------------
 function G.setTargetPart(partName)
     G.TargetPart = partName
-    notify("Aimbot", "Mira: " .. partName, 2, "solar:crosshairs-bold")
 end
 
 function G.setSilentAimPart(partName)
     G.SilentAimPart = partName
-    notify("Silent Aim", "Parte: " .. partName, 2, "solar:crosshairs-bold")
 end
 
 ------------------------------------------------------------------------
@@ -166,7 +164,6 @@ function G.bringPlayer(name)
     local r  = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local tr = t.Character:FindFirstChild("HumanoidRootPart")
     if r and tr then tr.CFrame = r.CFrame * CFrame.new(0,0,-3) end
-    notify("Bring", name.." trazido!", 2, "solar:user-plus-bold")
 end
 
 ------------------------------------------------------------------------
@@ -195,10 +192,8 @@ function G.toggleLoopTP(enabled)
             G.LoopTPEnabled = false return
         end
         _doLoopTP()
-        notify("Loop TP","Loop em: "..G.LoopTPTarget,3,"repeat")
     else
         if G.LoopTPConn then G.LoopTPConn:Disconnect() G.LoopTPConn = nil end
-        notify("Loop TP","Desativado.",2,"x")
     end
 end
 
@@ -219,9 +214,7 @@ function G.toggleFakeTP(enabled)
             task.wait(G.FakeTPDelay)
             if root and root.Parent then root.CFrame = orig end
         end)
-        notify("Fake TP","Ativado!",3,"ghost")
     else
-        notify("Fake TP","Desativado.",2,"x")
     end
 end
 
@@ -311,10 +304,8 @@ function G.toggleESP(enabled)
     G.EspEnabled = enabled
     if enabled then
         for _, p in ipairs(S.Players:GetPlayers()) do createESP(p) end
-        notify("ESP","Ativado!",2,"solar:eye-bold")
     else
         G.removeAllESP()
-        notify("ESP","Desativado.",2,"x")
     end
 end
 
@@ -338,7 +329,7 @@ function G.toggleEspLines(enabled)
     G.EspLinesEnabled = enabled
     if G.EspLinesConn then G.EspLinesConn:Disconnect() G.EspLinesConn = nil end
     _clearLines()
-    if not enabled then notify("ESP Lines","Desativado.",2,"x") return end
+    if not enabled then return end
 
     -- UMA linha por jogador, criada 1x e só ATUALIZADA por frame.
     -- IMPORTANTE: Drawing NÃO tem .Parent (não é Instance) — nunca usar isso
@@ -399,7 +390,6 @@ function G.toggleEspLines(enabled)
             if not seen[p] then line.Visible = false end
         end
     end)
-    notify("ESP Lines","Linhas ativadas!",2,"solar:arrow-right-bold")
 end
 
 ------------------------------------------------------------------------
@@ -446,7 +436,6 @@ function G.toggleHitboxESP(enabled)
             end
         end
     end
-    notify("Hitbox Visual", enabled and "Boxes visíveis!" or "Removidas.", 2, enabled and "geist:box" or "x")
 end
 
 ------------------------------------------------------------------------
@@ -465,7 +454,6 @@ function G.toggleNoClip(enabled)
                 end
             end
         end)
-        notify("NoClip","Ativado!",2,"solar:ghost-bold")
     else
         if G.NoClipConn then G.NoClipConn:Disconnect() G.NoClipConn = nil end
         local char = LP.Character
@@ -474,7 +462,6 @@ function G.toggleNoClip(enabled)
                 if p:IsA("BasePart") then p.CanCollide = true end
             end
         end
-        notify("NoClip","Desativado.",2,"x")
     end
 end
 
@@ -507,13 +494,11 @@ function G.toggleFly(enabled)
             G.FlyBV.Velocity = (dir.Magnitude > 0) and dir.Unit * G.FlySpeed or Vector3.zero
             G.FlyBG.CFrame   = cam.CFrame
         end)
-        notify("Fly","Voo ativado!",2,"solar:plane-bold")
     else
         if G.FlyConn then G.FlyConn:Disconnect() G.FlyConn = nil end
         hum.PlatformStand = false
         if G.FlyBV then G.FlyBV:Destroy() G.FlyBV = nil end
         if G.FlyBG then G.FlyBG:Destroy() G.FlyBG = nil end
-        notify("Fly","Desativado.",2,"x")
     end
 end
 
@@ -532,10 +517,8 @@ function G.toggleSpin(enabled)
             local r = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if r then r.CFrame = r.CFrame * CFrame.Angles(0, math.rad(360*dt), 0) end
         end)
-        notify("Spin","Girando!",2,"solar:refresh-bold")
     else
         if G.SpinConn then G.SpinConn:Disconnect() G.SpinConn = nil end
-        notify("Spin","Parou.",2,"x")
     end
 end
 
@@ -590,7 +573,6 @@ function G.toggleFlingSpin(enabled)
             end
         end)
 
-        notify("Fling Spin", "Ativo! Encosta no jogador para arremessá-lo.", 3, "solar:refresh-bold")
     else
         -- remove o BodyAngularVelocity
         if root:FindFirstChild("RH_FlingBAV") then
@@ -608,7 +590,6 @@ function G.toggleFlingSpin(enabled)
         end
 
         if hum then hum.AutoRotate = true end
-        notify("Fling Spin", "Desativado.", 2, "x")
     end
 end
 
@@ -617,7 +598,7 @@ end
 ------------------------------------------------------------------------
 function G.flingPlayer(target, power)
     if not target or not target.Character then
-        notify("Fling","Alvo inválido.",2,"x") return
+        return
     end
 
     local myChar = LP.Character
@@ -717,12 +698,10 @@ function G.toggleOrbit(enabled)
             local off = Vector3.new(math.cos(a)*G.OrbitRadius, 0, math.sin(a)*G.OrbitRadius)
             r.CFrame  = CFrame.lookAt(tr.Position + off, tr.Position)
         end)
-        notify("Orbit","Orbitando "..G.OrbitTarget,3,"solar:rotate-cw-bold")
     else
         if G.OrbitConn then G.OrbitConn:Disconnect() G.OrbitConn = nil end
         local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.PlatformStand = false end
-        notify("Orbit","Desativado.",2,"x")
     end
 end
 
@@ -900,14 +879,10 @@ end
 
 function G.toggleSilentAim(enabled)
     G.SilentAimEnabled = enabled
-    notify("Silent Aim", enabled and ("Ativado! Parte: "..G.SilentAimPart) or "Desativado.", 2,
-        enabled and "solar:crosshairs-bold" or "x")
 end
 
 function G.toggleHitPred(enabled)
     G.HitPredEnabled = enabled
-    notify("Hit Prediction", enabled and "Ativado!" or "Desativado.", 2,
-        enabled and "solar:clock-circle-bold" or "x")
 end
 
 ------------------------------------------------------------------------
@@ -952,11 +927,9 @@ function G.toggleHitbox(enabled)
                 end)
             end
         end
-        notify("Hitbox","Expandido: "..G.HitboxSize.." studs!",2,"solar:maximize-bold")
     else
         G.removeHitboxes()
         if G.HitboxConn then G.HitboxConn:Disconnect() G.HitboxConn = nil end
-        notify("Hitbox","Resetado.",2,"x")
     end
 end
 
@@ -978,7 +951,6 @@ function G.toggleAntiRagdoll(enabled)
                 if v:IsA("BallSocketConstraint") or v:IsA("HingeConstraint") then v.Enabled = false end
             end
         end)
-        notify("Anti-Ragdoll","Ativado!",2,"solar:shield-bold")
     else
         local char = LP.Character
         if char then
@@ -986,7 +958,6 @@ function G.toggleAntiRagdoll(enabled)
                 if v:IsA("BallSocketConstraint") or v:IsA("HingeConstraint") then v.Enabled = true end
             end
         end
-        notify("Anti-Ragdoll","Desativado.",2,"x")
     end
 end
 
@@ -1020,9 +991,7 @@ function G.toggleAutoParry(enabled)
                 end
             end
         end)
-        notify("Auto Parry","Ativado! Tecla: "..G.AutoParryKey.Name,3,"solar:shield-bold")
     else
-        notify("Auto Parry","Desativado.",2,"x")
     end
 end
 
@@ -1048,7 +1017,6 @@ function G.rejoinServer()
     local id  = game.PlaceId
     local job = game.JobId
     if job == "" then notify("Rejoin","Falhou: JobId vazio.",3,"x") return end
-    notify("Rejoin","Voltando ao mesmo server...",3,"solar:refresh-bold")
     pcall(function() TS:TeleportToPlaceInstance(id, job, LP) end)
 end
 
@@ -1056,7 +1024,6 @@ function G.serverHop()
     local id      = game.PlaceId
     local cursor  = ""
     local servers = {}
-    notify("Server Hop","Buscando servidores...",5,"solar:server-bold")
     repeat
         local ok, res = pcall(function()
             local url = "https://games.roblox.com/v1/games/"..id.."/servers/Public?sortOrder=Asc&limit=100"
@@ -1086,7 +1053,6 @@ function G.serverHop()
     end
     local sv = servers[math.random(1,#servers)]
     G.AlreadyJoined[sv] = true
-    notify("Hop!","Teleportando...",3,"solar:server-bold")
     pcall(function() TS:TeleportToPlaceInstance(id, sv, LP) end)
 end
 
@@ -1160,12 +1126,10 @@ function G.toggleRadar(enabled)
                 end
             end
         end)
-        notify("Radar","Ativado!",2,"solar:map-point-bold")
     else
         if G.RadarConn then G.RadarConn:Disconnect() G.RadarConn = nil end
         for _, d in pairs(G.RadarDots) do pcall(function() d:Destroy() end) end
         G.RadarDots = {}
-        notify("Radar","Desativado.",2,"x")
     end
 end
 
@@ -1182,12 +1146,10 @@ function G.toggleGod(enabled)
     if enabled then
         if G.GodConn then G.GodConn:Disconnect() end
         G.GodConn = LP.CharacterAdded:Connect(function(c) if G.GodEnabled then applyGod(c) end end)
-        notify("God Mode","HP Infinito!",3,"solar:shield-star-bold")
     else
         if G.GodConn then G.GodConn:Disconnect() G.GodConn = nil end
         local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.MaxHealth = 100; if hum.Health > 100 then hum.Health = 100 end end
-        notify("God Mode","Desativado.",2,"x")
     end
 end
 
@@ -1209,7 +1171,6 @@ function G.toggleInvisible(enabled)
             end
         end)
     end
-    notify("Invisível", enabled and "Invisível!" or "Visível.", 2, enabled and "solar:eye-closed-bold" or "solar:eye-bold")
 end
 
 function G.toggleInfJump(enabled)
@@ -1221,9 +1182,7 @@ function G.toggleInfJump(enabled)
             local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
         end)
-        notify("Infinite Jump","Ativado!",2,"solar:arrow-up-bold")
     else
-        notify("Infinite Jump","Desativado.",2,"x")
     end
 end
 
@@ -1236,13 +1195,11 @@ function G.toggleFullbright(enabled)
     if enabled then
         G.OrigLighting = { Brightness=L.Brightness, ClockTime=L.ClockTime, FogEnd=L.FogEnd, GlobalShadows=L.GlobalShadows, Ambient=L.Ambient }
         L.Brightness=2; L.ClockTime=14; L.FogEnd=100000; L.GlobalShadows=false; L.Ambient=Color3.fromRGB(255,255,255)
-        notify("Fullbright","Ativado!",2,"solar:sun-bold")
     else
         if G.OrigLighting.Brightness then
             L.Brightness=G.OrigLighting.Brightness; L.ClockTime=G.OrigLighting.ClockTime
             L.FogEnd=G.OrigLighting.FogEnd; L.GlobalShadows=G.OrigLighting.GlobalShadows; L.Ambient=G.OrigLighting.Ambient
         end
-        notify("Fullbright","Desativado.",2,"x")
     end
 end
 
@@ -1275,7 +1232,6 @@ function G.toggleXray(enabled)
         end
     end
     if not enabled then G.XrayOriginals = {} end
-    notify("Xray", enabled and "Ativado!" or "Desativado.", 2, enabled and "solar:eye-bold" or "x")
 end
 
 
@@ -1285,10 +1241,8 @@ function G.toggleNoFog(enabled)
     if enabled then
         G.OrigFog = {FogEnd=L.FogEnd, FogStart=L.FogStart}
         L.FogEnd=100000; L.FogStart=99999
-        notify("No Fog","Névoa removida!",2,"solar:cloud-bold")
     else
         L.FogEnd=G.OrigFog.FogEnd or 100000; L.FogStart=G.OrigFog.FogStart or 0
-        notify("No Fog","Névoa restaurada.",2,"x")
     end
 end
 
@@ -1299,7 +1253,6 @@ function G.toggleFreeze(enabled)
     G.FreezeEnabled = enabled
     local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if hrp then hrp.Anchored = enabled end
-    notify("Freeze", enabled and "Congelado!" or "Descongelado.", 2, enabled and "solar:snowflake-bold" or "x")
 end
 
 function G.setHeadSize(scale)
@@ -1340,9 +1293,7 @@ function G.toggleHoverName(enabled)
                 table.insert(G.HoverNameConns, c)
             end
         end
-        notify("Hover Name","Nomes ativados!",3,"solar:user-id-bold")
     else
-        notify("Hover Name","Desativado.",2,"x")
     end
 end
 
@@ -1359,9 +1310,7 @@ function G.toggleAntiAFK(enabled)
                 VU:CaptureController(); VU:ClickButton2(Vector2.new())
             end)
         end)
-        notify("Anti-AFK","Ativado!",3,"solar:clock-circle-bold")
     else
-        notify("Anti-AFK","Desativado.",2,"x")
     end
 end
 
@@ -1405,7 +1354,6 @@ function G.toggleFreecam(enabled)
         local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
         if hum then cam.CameraSubject = hum end
         if G.FreecamPart then G.FreecamPart:Destroy() G.FreecamPart = nil end
-        notify("Freecam","Desativado.",2,"x")
     end
 end
 
@@ -1429,9 +1377,7 @@ function G.toggleReach(enabled, size)
     apply(LP.Character)
     if enabled then
         G.ReachConn = LP.CharacterAdded:Connect(apply)
-        notify("Reach","Alcance: "..sz.." studs",3,"solar:cursor-bold")
     else
-        notify("Reach","Resetado.",2,"x")
     end
 end
 
@@ -1451,9 +1397,7 @@ function G.toggleKillAura(enabled)
                 end
             end
         end)
-        notify("Kill Aura","Ativado! Range: "..G.KillAuraRange,3,"solar:danger-bold")
     else
-        notify("Kill Aura","Desativado.",2,"x")
     end
 end
 
@@ -1467,9 +1411,7 @@ function G.toggleClickTP(enabled)
             local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if root and mouse.Hit then root.CFrame = mouse.Hit * CFrame.new(0,3,0) end
         end)
-        notify("Click TP","Clique no chão para teleportar!",3,"solar:cursor-bold")
     else
-        notify("Click TP","Desativado.",2,"x")
     end
 end
 
@@ -1580,10 +1522,8 @@ function G.toggleInventoryWebhook(enabled)
                 end
             end
         end)
-        notify("WebHook", "Monitorando inventário!", 3, "solar:bag-bold")
     else
         G.InvSnapshot = {}
-        notify("WebHook", "Monitor de inventário desativado.", 2, "x")
     end
 end
 
@@ -1662,9 +1602,7 @@ function G.toggleTriggerBot(enabled)
                 end
             end
         end)
-        notify("Trigger Bot", "Ativado! Delay: " .. tostring(G.TriggerBotDelay) .. "s", 3, "solar:crosshairs-bold")
     else
-        notify("Trigger Bot", "Desativado.", 2, "x")
     end
 end
 
@@ -1696,9 +1634,7 @@ function G.toggleAutoClicker(enabled)
                 clicking = false
             end)
         end)
-        notify("Auto Clicker", "Ativado! " .. G.AutoClickerCPS .. " CPS", 3, "solar:mouse-bold")
     else
-        notify("Auto Clicker", "Desativado.", 2, "x")
     end
 end
 
@@ -1744,9 +1680,7 @@ function G.toggleCrosshair(enabled)
             lines[4].From, lines[4].To = Vector2.new(cx + g, cy), Vector2.new(cx + g + s, cy)
             for i = 1, 4 do lines[i].Color = G.CrosshairColor end
         end)
-        notify("Crosshair", "Ativado!", 2, "solar:crosshair-bold")
     else
-        notify("Crosshair", "Desativado.", 2, "x")
     end
 end
 
@@ -1771,15 +1705,11 @@ end
 function G.toggleSpeedLock(enabled)
     G.SpeedLockEnabled = enabled
     _updateStatLock()
-    notify("Speed Lock", enabled and ("Travado em " .. G.SpeedValue) or "Desativado.", 2,
-        enabled and "solar:lock-bold" or "x")
 end
 
 function G.toggleJumpLock(enabled)
     G.JumpLockEnabled = enabled
     _updateStatLock()
-    notify("Jump Lock", enabled and ("Travado em " .. G.JumpValue) or "Desativado.", 2,
-        enabled and "solar:lock-bold" or "x")
 end
 
 -- AUTO RESPAWN: re-spawna sozinho ao morrer
@@ -1809,9 +1739,7 @@ function G.toggleAutoRespawn(enabled)
                 end)
             end
         end
-        notify("Auto Respawn", "Ativado!", 2, "solar:refresh-bold")
     else
-        notify("Auto Respawn", "Desativado.", 2, "x")
     end
 end
 
@@ -1830,12 +1758,10 @@ function G.toggleCamFOV(enabled)
             local cam = workspace.CurrentCamera
             if cam and cam.FieldOfView ~= G.CamFOVValue then cam.FieldOfView = G.CamFOVValue end
         end)
-        notify("Camera FOV", "FOV: " .. G.CamFOVValue, 2, "solar:camera-bold")
     else
         local cam = workspace.CurrentCamera
         if cam then cam.FieldOfView = G._OrigFieldOfView or 70 end
         G._OrigFieldOfView = nil
-        notify("Camera FOV", "Resetado.", 2, "x")
     end
 end
 
