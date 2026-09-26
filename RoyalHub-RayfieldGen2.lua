@@ -807,21 +807,8 @@ local function getDevName()
 end
 local IS_DEV = getDevName()
 
--- Adapter de notify: o Functions.lua usa notify() estilo WindUI
--- (getUI() -> _G.RH_WindUI or _G.RH_UI2). Sem isso TODOS os notifies do
--- Functions eram silenciosos (join/leave, anti-void, etc).
-_G.RH_UI2 = {
-    Notify = function(props)
-        if not Window or Window.unloaded then return end
-        pcall(function()
-            Window:Notify({
-                title    = props and props.Title or "Royal Hub",
-                content  = props and props.Content or "",
-                duration = props and props.Duration or 3,
-            })
-        end)
-    end,
-}
+-- Notifies do Functions.lua chamam isto direto (notify -> _G.RH_Window:Notify)
+_G.RH_Window = Window
 
 -- Snapshot do tema ativo no boot: restaura as cores quando o RGB é desligado
 local LastAppliedTheme = {

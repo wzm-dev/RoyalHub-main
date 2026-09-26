@@ -13,10 +13,14 @@ local LP  = S.Players.LocalPlayer
 local TS  = game:GetService("TeleportService")
 local HTTP = game:GetService("HttpService")
 
-local function getUI() return _G.RH_WindUI or _G.RH_UI2 end
+-- Notify DIRETO do Rayfield (a UI registra _G.RH_Window no CreateWindow).
+-- Zero indireção WindUI: title/content/duration são as props nativas do Gen2.
 local function notify(title, msg, dur, icon)
     pcall(function()
-        getUI():Notify({ Title = title, Content = msg, Duration = dur or 3, Icon = icon or "solar:bell-bold" })
+        local win = _G.RH_Window
+        if win and not win.unloaded then
+            win:Notify({ title = title, content = msg, duration = dur or 3 })
+        end
     end)
 end
 
@@ -1623,7 +1627,7 @@ G.SelectedIsland    = nil
 function G.sendWebhook(message)
     if not G.WebhookURL or G.WebhookURL == "" then
         pcall(function()
-            getUI():Notify({ Title = "WebHook", Content = "Configure a URL do webhook primeiro!", Duration = 3, Icon = "x" })
+            notify("WebHook", "Configure a URL do webhook primeiro!", 3)
         end)
         return
     end
@@ -1634,7 +1638,7 @@ function G.sendWebhook(message)
     end)
     if not ok then
         pcall(function()
-            getUI():Notify({ Title = "WebHook", Content = "Erro ao enviar: " .. tostring(err), Duration = 4, Icon = "x" })
+            notify("WebHook", "Erro ao enviar: " .. tostring(err), 4)
         end)
     end
 end
