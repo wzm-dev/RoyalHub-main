@@ -89,7 +89,7 @@ for _, iconName in ipairs({
     "crosshair", "target", "eye", "flare", "skull", "sun", "video",
     "user", "run", "rocket", "shield", "heart", "plant", "cart",
     "map", "cloud", "dice", "tools", "terminal", "box", "bolt",
-    "settings", "palette", "info", "keyboard", "crown",
+    "settings", "palette", "info", "keyboard", "crown", "arrow",
 }) do
     getIcon(iconName)
 end
@@ -1335,7 +1335,7 @@ TabVisual:CreateSection({ name = "Mundo" })
 
 TabVisual:CreateToggle({
     name = "Minimap",
-    description = "Radar 2D no canto da tela: você no centro, seta = visão da câmera.",
+    description = "Radar fixo no canto inferior direito: você é a flecha no centro, blips nos lugares reais.",
     flag = "Radar",
     callback = function(state) G.toggleRadar(state) end,
 })

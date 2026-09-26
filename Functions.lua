@@ -1055,23 +1055,26 @@ function G.serverHop()
 end
 
 ------------------------------------------------------------------------
--- MINIMAP 2D (refeito: quadrado moderno, você no centro, seta de visão,
--- blips por jogador com nome, cor por time, círculos de range e suavização)
+-- MINIMAP 2D v2 (mapa FIXO: blips nos lugares reais do mundo, norte pra cima;
+-- VOCÊ é uma flecha no centro que gira pra onde a câmera olha)
 ------------------------------------------------------------------------
 G.RadarEnabled      = false
 G.RadarRange        = 150
 G.RadarShowNames    = true
 G.RadarShowTeam     = true
 G.RadarSize         = 220
-G.RadarPos          = { x = 1, y = 1, xoff = -20, yoff = -20 }  -- canto sup-direito
 G.RadarGui          = nil
 G.RadarConn         = nil
-G._RadarBlips       = {}   -- [player] = {frame, label, tweens}
+G._RadarBlips       = {}
+G._RadarRoot        = nil
+G._RadarArrow       = nil
+G._RadarRangeLbl    = nil
 
 local function _radarDestroy()
     if G._RadarBlips then
         for _, b in pairs(G._RadarBlips) do
             pcall(function() b.frame:Destroy() end)
+            if b.label then pcall(function() b.label:Destroy() end) end
         end
     end
     G._RadarBlips = {}
@@ -1094,9 +1097,11 @@ local function _radarBuild()
 
     local S = G.RadarSize
 
+    -- painel: canto INFERIOR direito
     local root = Instance.new("Frame")
     root.Size = UDim2.fromOffset(S, S)
-    root.Position = UDim2.new(1, -S - 20, 0, 20)  -- canto sup-direito
+    root.Position = UDim2.new(1, -S - 16, 1, -S - 16)
+    root.AnchorPoint = Vector2.new(0, 0)
     root.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
     root.BackgroundTransparency = 0.15
     root.BorderSizePixel = 0
@@ -1110,10 +1115,6 @@ local function _radarBuild()
     stroke.Parent = root
 
     -- grade de fundo
-    local grid = Instance.new("Frame")
-    grid.Size = UDim2.fromScale(1, 1)
-    grid.BackgroundTransparency = 1
-    grid.Parent = root
     for i = 1, 3 do
         local ln = Instance.new("Frame")
         ln.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
@@ -1121,17 +1122,20 @@ local function _radarBuild()
         ln.BorderSizePixel = 0
         ln.Size = UDim2.new(1, 0, 0, 1)
         ln.Position = UDim2.new(0, 0, i / 4, 0)
-        ln.Parent = grid
-        local ln2 = ln:Clone()
+        ln.Parent = root
+        local ln2 = Instance.new("Frame")
+        ln2.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+        ln2.BackgroundTransparency = 0.75
+        ln2.BorderSizePixel = 0
         ln2.Size = UDim2.new(0, 1, 1, 0)
         ln2.Position = UDim2.new(i / 4, 0, 0, 0)
-        ln2.Parent = grid
+        ln2.Parent = root
     end
 
-    -- círculos de range (1/2 e range total)
+    -- círculos de range
     for _, frac in ipairs({ 0.25, 0.5, 0.75 }) do
         local circ = Instance.new("Frame")
-        local d = S * frac * 1.6
+        local d = S * frac * 1.5
         circ.Size = UDim2.fromOffset(d, d)
         circ.Position = UDim2.new(0.5, -d / 2, 0.5, -d / 2)
         circ.BackgroundTransparency = 1
@@ -1145,22 +1149,45 @@ local function _radarBuild()
         cst.Parent = circ
     end
 
-    -- você: seta apontando pra onde a câmera olha
-    local me = Instance.new("Frame")
-    me.Size = UDim2.fromOffset(10, 10)
-    me.Position = UDim2.new(0.5, -5, 0.5, -5)
-    me.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
-    me.BorderSizePixel = 0
-    me.Parent = root
-    Instance.new("UICorner", me).CornerRadius = UDim.new(1, 0)
-    local meArrow = Instance.new("Frame")
-    meArrow.Size = UDim2.fromOffset(4, 12)
-    meArrow.AnchorPoint = Vector2.new(0.5, 1)
-    meArrow.Position = UDim2.new(0.5, 0, 0.5, -2)
-    meArrow.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
-    meArrow.BorderSizePixel = 0
-    meArrow.Parent = root
-    Instance.new("UICorner", meArrow).CornerRadius = UDim.new(0, 2)
+    -- VOCÊ: flecha (ImageLabel) que gira com a câmera
+    local arrow = Instance.new("ImageLabel")
+    arrow.Size = UDim2.fromOffset(22, 22)
+    arrow.AnchorPoint = Vector2.new(0.5, 0.5)
+    arrow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Parent = root
+    -- tenta o PNG local (flecha branca); fallback = triângulo com UICorner
+    local okArrow = pcall(function()
+        local p = ICON_DIR_ARROW or "royalhub_icons/arrow.png"
+        if isfile(p) then
+            arrow.Image = getcustomasset(p)
+        else
+            error("no file")
+        end
+    end)
+    if not okArrow then
+        -- fallback: seta feita de Frame (triângulo aprox por retângulo rotacionado)
+        arrow.Image = ""
+        arrow.BackgroundColor3 = Color3.fromRGB(0, 230, 118)
+        arrow.BackgroundTransparency = 0
+        arrow.Size = UDim2.fromOffset(4, 16)
+        Instance.new("UICorner", arrow).CornerRadius = UDim.new(1, 0)
+    else
+        -- tinge o PNG de verde
+        arrow.ImageColor3 = Color3.fromRGB(0, 230, 118)
+    end
+    G._RadarArrow = arrow
+
+    -- label N (norte) no topo
+    local nLbl = Instance.new("TextLabel")
+    nLbl.Size = UDim2.new(0, 20, 0, 14)
+    nLbl.Position = UDim2.new(0.5, -10, 0, 2)
+    nLbl.BackgroundTransparency = 1
+    nLbl.Text = "N"
+    nLbl.TextColor3 = Color3.fromRGB(160, 160, 200)
+    nLbl.TextSize = 11
+    nLbl.Font = Enum.Font.GothamBold
+    nLbl.Parent = root
 
     -- label de range no rodapé
     local rangeLbl = Instance.new("TextLabel")
@@ -1172,10 +1199,9 @@ local function _radarBuild()
     rangeLbl.TextSize = 11
     rangeLbl.Font = Enum.Font.Gotham
     rangeLbl.Parent = root
+    G._RadarRangeLbl = rangeLbl
 
     G._RadarRoot = root
-    G._RadarMeArrow = meArrow
-    G._RadarRangeLbl = rangeLbl
 end
 
 local function _radarGetBlip(p)
@@ -1184,7 +1210,8 @@ local function _radarGetBlip(p)
     if not root then return nil end
 
     local blip = Instance.new("Frame")
-    blip.Size = UDim2.fromOffset(8, 8)
+    blip.Size = UDim2.fromOffset(7, 7)
+    blip.AnchorPoint = Vector2.new(0.5, 0.5)
     blip.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
     blip.BorderSizePixel = 0
     blip.Parent = root
@@ -1199,6 +1226,7 @@ local function _radarGetBlip(p)
     if G.RadarShowNames then
         lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(0, 90, 0, 12)
+        lbl.AnchorPoint = Vector2.new(0.5, 1)
         lbl.BackgroundTransparency = 1
         lbl.Text = p.Name
         lbl.TextColor3 = Color3.fromRGB(255, 220, 220)
@@ -1229,16 +1257,14 @@ function G.toggleRadar(enabled)
         local lroot = char and char:FindFirstChild("HumanoidRootPart")
         if not lroot then return end
 
-        local camY = 0
+        -- FLECHA gira pra onde a câmera olha (yaw)
+        local camYaw = 0
         pcall(function()
             local _, y = workspace.CurrentCamera.CFrame:ToEulerAnglesYXZ()
-            camY = y
+            camYaw = y
         end)
+        G._RadarArrow.Rotation = -math.deg(camYaw)
 
-        -- seta do player gira com a câmera
-        G._RadarMeArrow.Rotation = -math.deg(camY)
-
-        -- label de range atualizado (slider muda G.RadarRange ao vivo)
         G._RadarRangeLbl.Text = G.RadarRange .. " studs"
 
         local half = G.RadarSize / 2
@@ -1255,18 +1281,14 @@ function G.toggleRadar(enabled)
                     local dist = diff.Magnitude
                     if dist <= range then
                         seen[p] = true
-                        local blip = G._RadarGetBlip and G._RadarGetBlip(p) or _radarGetBlip(p)
+                        local blip = _radarGetBlip(p)
                         if blip then
-                            -- rotaciona o mundo pelo olhar da câmera (você fixo no centro)
-                            local cosY, sinY = math.cos(-camY), math.sin(-camY)
-                            local rx = diff.X * cosY - diff.Z * sinY
-                            local rz = diff.X * sinY + diff.Z * cosY
-                            -- normaliza pro quadrado
-                            local nx = math.clamp(rx / range, -1, 1) * (half - 14)
-                            local ny = math.clamp(rz / range, -1, 1) * (half - 14)
-                            blip.frame.Position = UDim2.new(0.5, nx - 4, 0.5, ny - 4)
+                            -- MODO MAPA FIXO: mundo não gira — norte (Z-) pra cima.
+                            -- blips nos lugares reais: X direita, Z baixo.
+                            local nx = (diff.X / range) * (half - 14)
+                            local ny = (diff.Z / range) * (half - 14)
+                            blip.frame.Position = UDim2.new(0.5, nx, 0.5, ny)
 
-                            -- cor: aliado azul, inimigo vermelho
                             if G.RadarShowTeam then
                                 local isAlly = myTeam and p.Team == myTeam
                                 blip.frame.BackgroundColor3 = isAlly
@@ -1274,11 +1296,8 @@ function G.toggleRadar(enabled)
                                     or  Color3.fromRGB(255, 60, 60)
                             end
 
-                            -- label segue o blip
                             if blip.label then
-                                blip.label.Position = UDim2.new(
-                                    0.5, nx - 45,
-                                    0.5, ny - 18)
+                                blip.label.Position = UDim2.new(0.5, nx, 0.5, ny - 6)
                             end
                         end
                     end
@@ -1286,7 +1305,6 @@ function G.toggleRadar(enabled)
             end
         end
 
-        -- quem sumiu (saiu do range/morreu) tem o blip removido
         for p, b in pairs(G._RadarBlips) do
             if not seen[p] then
                 pcall(function() b.frame:Destroy() end)
@@ -1999,37 +2017,31 @@ local function _esp2dStart()
                             _esp2dHideKeys(p, HP_KEYS)
                         end
 
-                        -- ===== INFO (ancorado na CABEÇA — o box gira com o char e
-                        --      dava posição errada; head é fixo e correto) =====
+                        -- ===== INFO (ancorado no TOPO DO BOX projetado — funciona
+                        --      com qualquer rig, inclusive chars morfados que não
+                        --      têm "Head" visível; usa minX/maxX já calculados) =====
                         if G.EspInfoEnabled then
-                            local head = char:FindFirstChild("Head") or root
-                            local hpScr, headOn = cam:WorldToViewportPoint(head.Position)
-                            if headOn then
-                                local nameTxt = _esp2dObj(p, "nameTxt", "Text")
-                                if nameTxt then
-                                    nameTxt.Visible   = true
-                                    nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
-                                    -- Position com Center=true: centro horizontal no X da cabeça
-                                    -- e o TOPO do texto um pouco acima da cabeça
-                                    nameTxt.Position  = Vector2.new(hpScr.X, hpScr.Y - 30)
-                                    nameTxt.Size      = 16
-                                    nameTxt.Center    = true
-                                    nameTxt.Outline   = true
-                                    nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
-                                end
-                                local distTxt = _esp2dObj(p, "distTxt", "Text")
-                                if distTxt then
-                                    local dist = math.floor((camPos - root.Position).Magnitude)
-                                    distTxt.Visible   = true
-                                    distTxt.Text      = dist .. "m"
-                                    distTxt.Position  = Vector2.new(hpScr.X, hpScr.Y - 46)
-                                    distTxt.Size      = 13
-                                    distTxt.Center    = true
-                                    distTxt.Outline   = true
-                                    distTxt.Color     = Color3.fromRGB(200, 200, 200)
-                                end
-                            else
-                                _esp2dHideKeys(p, INFO_KEYS)
+                            local cx = (minX + maxX) / 2
+                            local nameTxt = _esp2dObj(p, "nameTxt", "Text")
+                            if nameTxt then
+                                nameTxt.Visible   = true
+                                nameTxt.Text      = (p.DisplayName ~= "" and p.DisplayName or p.Name)
+                                nameTxt.Position  = Vector2.new(cx, minY - 24)
+                                nameTxt.Size      = 16
+                                nameTxt.Center    = true
+                                nameTxt.Outline   = true
+                                nameTxt.Color     = G.EspInfoColor or Color3.new(1, 1, 1)
+                            end
+                            local distTxt = _esp2dObj(p, "distTxt", "Text")
+                            if distTxt then
+                                local dist = math.floor((camPos - root.Position).Magnitude)
+                                distTxt.Visible   = true
+                                distTxt.Text      = dist .. "m"
+                                distTxt.Position  = Vector2.new(cx, maxY + 4)
+                                distTxt.Size      = 13
+                                distTxt.Center    = true
+                                distTxt.Outline   = true
+                                distTxt.Color     = Color3.fromRGB(200, 200, 200)
                             end
                         else
                             _esp2dHideKeys(p, INFO_KEYS)
