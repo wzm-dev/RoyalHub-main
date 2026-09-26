@@ -328,6 +328,10 @@ local function _clearLines()
         for _, d in pairs(G._EspLinesByPlayer) do pcall(function() d:Remove() end) end
         G._EspLinesByPlayer = nil
     end
+    if G._EspLinesRemoveConn then
+        G._EspLinesRemoveConn:Disconnect()
+        G._EspLinesRemoveConn = nil
+    end
 end
 
 function G.toggleEspLines(enabled)
@@ -337,13 +341,23 @@ function G.toggleEspLines(enabled)
     if not enabled then notify("ESP Lines","Desativado.",2,"x") return end
 
     -- UMA linha por jogador, criada 1x e só ATUALIZADA por frame.
-    -- (o método antigo destruía/recriava todas as linhas todo RenderStepped,
-    --  o GC/executors engasgavam e as linhas sumiam em mapas pesados)
+    -- IMPORTANTE: Drawing NÃO tem .Parent (não é Instance) — nunca usar isso
+    -- como teste de validade; se está no cache, a linha é válida.
     local perPlayer = {}
     G._EspLinesByPlayer = perPlayer
 
+    local function removeLine(p)
+        if perPlayer[p] then
+            pcall(function() perPlayer[p]:Remove() end)
+            perPlayer[p] = nil
+        end
+    end
+
+    -- player saiu do jogo? remove a linha dele na hora
+    G._EspLinesRemoveConn = S.Players.PlayerRemoving:Connect(removeLine)
+
     local function getLineFor(p)
-        if perPlayer[p] and perPlayer[p].Parent ~= nil then return perPlayer[p] end
+        if perPlayer[p] then return perPlayer[p] end
         local ok, line = pcall(Drawing.new, "Line")
         if not ok then return nil end
         line.Visible = false
@@ -359,9 +373,11 @@ function G.toggleEspLines(enabled)
         local cam = workspace.CurrentCamera
         local vp  = cam.ViewportSize
         local bot = Vector2.new(vp.X / 2, vp.Y)
+        local seen = {}
         for _, player in ipairs(S.Players:GetPlayers()) do
             local line = getLineFor(player)
             if line then
+                seen[player] = true
                 local show = false
                 if player ~= LP and player.Character then
                     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -377,6 +393,10 @@ function G.toggleEspLines(enabled)
                 end
                 line.Visible = show
             end
+        end
+        -- sobrou linha de player que saiu sem disparar PlayerRemoving? esconde
+        for p, line in pairs(perPlayer) do
+            if not seen[p] then line.Visible = false end
         end
     end)
     notify("ESP Lines","Linhas ativadas!",2,"solar:arrow-right-bold")
