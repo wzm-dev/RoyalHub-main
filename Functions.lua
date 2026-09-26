@@ -522,84 +522,86 @@ function G.toggleSpin(enabled)
 end
 
 ------------------------------------------------------------------------
--- FLING SPIN (toggle persistente)
+-- FLING SPIN (método clássico: BAV eixo Y + BodyPosition segura no lugar;
+-- colisão NORMAL — encostou num jogador, a física o arremessa.
+-- sem noclip = sem cair no void, sem atravessar o alvo)
 ------------------------------------------------------------------------
 G.FlingSpinEnabled  = false
 G.FlingSpinConn     = nil
-G.FlingSpinSpeed    = 500   -- padrão; sobrescrito pelo slider
+G.FlingSpinSpeed    = 5000
 
 function G.toggleFlingSpin(enabled)
     G.FlingSpinEnabled = enabled
-
-    -- limpa estado anterior
     if G.FlingSpinConn then
         G.FlingSpinConn:Disconnect()
         G.FlingSpinConn = nil
     end
 
     local char = LP.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum  = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
 
-    if not root then
+    -- limpa restos de sessão anterior
+    if root then
+        local oldBav = root:FindFirstChild("RH_FlingBAV")
+        if oldBav then oldBav:Destroy() end
+        local oldBp  = root:FindFirstChild("RH_FlingBP")
+        if oldBp then oldBp:Destroy() end
+    end
+
+    if not enabled then return end
+    local hum  = char and char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then
         notify("Fling Spin", "Personagem não carregado.", 2, "x")
         G.FlingSpinEnabled = false
         return
     end
 
-    if enabled then
-        -- desativa auto-rotate e colisão para atravessar o alvo
-        if hum then hum.AutoRotate = false end
-
-        local bav = Instance.new("BodyAngularVelocity")
-        bav.Name           = "RH_FlingBAV"
-        bav.MaxTorque      = Vector3.new(1, 1, 1) * math.huge
-        bav.P              = math.huge
-        -- rotação nos 3 eixos = personagem "rola" em todas as direções
-        local spd = G.FlingSpinSpeed or 500
-        bav.AngularVelocity = Vector3.new(spd, spd * 2, spd)
-        bav.Parent = root
-
-        -- noclip loop: mantém seu char atravessando geometria/players
-        G.FlingSpinConn = S.Run.Stepped:Connect(function()
-            if not G.FlingSpinEnabled then return end
-            local c = LP.Character
-            if not c then return end
-            for _, v in ipairs(c:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = false
-                end
-            end
-        end)
-
-    else
-        -- remove o BodyAngularVelocity
-        if root:FindFirstChild("RH_FlingBAV") then
-            root:FindFirstChild("RH_FlingBAV"):Destroy()
+    -- colisão LIGADA (sessões antigas podiam ter desligado)
+    for _, v in ipairs(char:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+            v.CanCollide = true
         end
-
-        -- restaura colisão
-        local c = LP.Character
-        if c then
-            for _, v in ipairs(c:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = true
-                end
-            end
-        end
-
-        if hum then hum.AutoRotate = true end
     end
+    hum.AutoRotate = false
+
+    local spd = G.FlingSpinSpeed or 5000
+
+    -- BodyPosition: trava VOCÊ no lugar (não cai, não sai voando)
+    local bp = Instance.new("BodyPosition")
+    bp.Name       = "RH_FlingBP"
+    bp.MaxForce   = Vector3.new(1e9, 1e9, 1e9)
+    bp.P          = 10000
+    bp.D          = 100
+    bp.Position    = root.Position
+    bp.Parent     = root
+
+    -- BAV: giro MASSIVO no eixo Y (a "vibração" que arremessa na colisão)
+    local bav = Instance.new("BodyAngularVelocity")
+    bav.Name            = "RH_FlingBAV"
+    bav.MaxTorque       = Vector3.new(0, math.huge, 0)
+    bav.AngularVelocity = Vector3.new(0, spd, 0)
+    bav.P               = math.huge
+    bav.Parent          = root
+
+    -- respawn re-aplica
+    G.FlingSpinConn = S.Run.Heartbeat:Connect(function()
+        if not G.FlingSpinEnabled then return end
+        local c = LP.Character
+        local r = c and c:FindFirstChild("HumanoidRootPart")
+        if r and not r:FindFirstChild("RH_FlingBAV") and not r:FindFirstChild("RH_FlingBP") then
+            G.toggleFlingSpin(true)
+        end
+    end)
 end
 
 ------------------------------------------------------------------------
--- FLING PLAYER (one-shot — usa AssemblyLinearVelocity, método novo)
+-- FLING PLAYER (one-shot: gira VOCÊ sobre o alvo, colisão faz o resto)
 ------------------------------------------------------------------------
 function G.flingPlayer(target, power)
     if not target or not target.Character then
+        notify("Fling", "Alvo inválido.", 2, "x")
         return
     end
-
     local myChar = LP.Character
     local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso"))
     local myHum  = myChar and myChar:FindFirstChildOfClass("Humanoid")
@@ -609,64 +611,33 @@ function G.flingPlayer(target, power)
 
     local vel = power or G.FlingSpinSpeed or 9000
 
-    -- ancora
     for _, v in ipairs(myChar:GetDescendants()) do
-        if v:IsA("BasePart") and not v.Anchored then v.Anchored = true end
+        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+            v.CanCollide = true
+        end
     end
+    myHum.AutoRotate = false
 
-    -- BAV
+    local bp = Instance.new("BodyPosition")
+    bp.Name     = "RH_FlingBP"
+    bp.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bp.P        = 10000
+    bp.D        = 100
+    bp.Position = tRoot.Position + Vector3.new(0, 2, 0)
+    bp.Parent   = myRoot
+
     local bav = Instance.new("BodyAngularVelocity")
+    bav.Name            = "RH_FlingBAV"
     bav.MaxTorque       = Vector3.new(0, math.huge, 0)
     bav.AngularVelocity = Vector3.new(0, vel, 0)
+    bav.P               = math.huge
     bav.Parent          = myRoot
 
-    myHum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-    myHum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-    myHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-    myHum:ChangeState(Enum.HumanoidStateType.Swimming)
-
-    -- desancora
-    for _, v in ipairs(myChar:GetDescendants()) do
-        if v:IsA("BasePart") and v.Anchored then v.Anchored = false end
-    end
-
-    -- noclip temporário
-    local noclipConn = S.Run.Stepped:Connect(function()
-        for _, v in ipairs(myChar:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
+    task.delay(0.6, function()
+        if bp and bp.Parent then bp:Destroy() end
+        if bav and bav.Parent then bav:Destroy() end
+        if myHum and myHum.Parent then myHum.AutoRotate = true end
     end)
-
-    -- teleporta em cima do alvo
-    task.wait(0.05)
-    myRoot.CFrame = tRoot.CFrame
-
-    -- MÉTODO NOVO: aplica AssemblyLinearVelocity direto no alvo
-    -- isso joga ele independente de colisão
-    task.spawn(function()
-        for i = 1, 3 do
-            local tr = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            if tr then
-                local dir = Vector3.new(math.random(-1,1), 0.5, math.random(-1,1)).Unit
-                tr.AssemblyLinearVelocity = dir * vel
-            end
-            task.wait(0.05)
-        end
-    end)
-
-    task.wait(0.4)
-
-    bav:Destroy()
-    noclipConn:Disconnect()
-    myHum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-    myHum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-    myHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-    myHum:ChangeState(Enum.HumanoidStateType.GettingUp)
-    for _, v in ipairs(myChar:GetDescendants()) do
-        if v:IsA("BasePart") then v.CanCollide = true end
-    end
-
-    notify("Fling","Arremessado: "..target.Name, 2, "solar:refresh-bold")
 end
 
 ------------------------------------------------------------------------
@@ -1801,10 +1772,17 @@ function G.toggleEspBones(enabled)
 
     G.EspBonesConn = S.Run.RenderStepped:Connect(function()
         local cam = workspace.CurrentCamera
+        local camPos = cam.CFrame.Position
         for _, p in ipairs(S.Players:GetPlayers()) do
             if p ~= LP and p.Character then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if not (hum and hum.Health > 0) then
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                -- CULLING: 1 projeção barata decide se o player interessa;
+                -- fora da tela/longe demais = esconde tudo (as 14+ linhas nem
+                -- rodam as projeções delas) -> recupera o FPS com server cheio
+                local sp, onScreen = cam:WorldToViewportPoint(hrp and hrp.Position or p.Character:GetPivot().Position)
+                local inRange = hrp and (camPos - hrp.Position).Magnitude <= G.MaxDistance
+                if not (hum and hum.Health > 0 and onScreen and inRange) then
                     _bonesRemove(p)
                 else
                     local rig = hum.RigType

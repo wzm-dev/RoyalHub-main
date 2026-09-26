@@ -1704,22 +1704,33 @@ ToggleAutoBuy:Lock("Em desenvolvimento.")
 
 TabTeleport:CreateSection({ name = "Teleport" })
 
-local tpDropdownReady = false
+-- seleciona o alvo (NÃO teleporta na hora)
+local TPSelTarget = nil
 local TPDropdown = TabTeleport:CreateDropdown({
-    name = "Teleportar até jogador",
-    description = "Teleporta até o jogador selecionado",
+    name = "Selecione o Jogador",
+    description = "Escolha o alvo do teleporte (não teleporta ao selecionar).",
     options = getPlayerNames(),
     placeholder = "Selecione...",
     flag = "TPTarget",
     callback = function(option)
         if not option or option == "" then return end
-        G.LoopTPTarget = option
-        if tpDropdownReady then
-            G.tpToPlayerName(option)
-        end
+        TPSelTarget = option
+        G.LoopTPTarget = option -- loop TP e fling usam esse alvo
     end,
 })
-tpDropdownReady = true
+
+-- botão: AGORA teleporta
+TabTeleport:CreateButton({
+    name = "Teleportar até Jogador",
+    description = "Teleporta até o jogador selecionado acima.",
+    callback = function()
+        if not TPSelTarget then
+            Window:Notify({ title = "Teleporte", content = "Selecione um jogador primeiro!", duration = 3 })
+            return
+        end
+        G.tpToPlayerName(TPSelTarget)
+    end,
+})
 
 local ToggleLoopTP = TabTeleport:CreateToggle({
     name = "Loop TP",
@@ -2813,8 +2824,16 @@ if IS_DEV then
         flag = "PersistentHub",
         callback = function(state)
             G.RoyalHubPersistent = state
+            -- queue_on_teleport recebe CÓDIGO LUA, não URL: por isso não funcionava
             if state and queue_on_teleport then
-                queue_on_teleport(REPO_URL)
+                queue_on_teleport(([[
+                    local ok = pcall(function()
+                        loadstring(game:HttpGet("%s"))()
+                    end)
+                    if not ok then
+                        warn("[RoyalHub] Falha ao re-executar após teleport")
+                    end
+                ]]):format(REPO_URL))
             end
         end,
     })
