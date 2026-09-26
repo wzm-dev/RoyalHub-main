@@ -21,7 +21,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
 -- Functions.lua (mesma dependência do Source original)
 local functionsLoaded = false
 task.spawn(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/BadOctop4s/Functions/refs/heads/main/Functions.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/refs/heads/main/Functions.lua"))()
     functionsLoaded = true
 end)
 while not functionsLoaded do task.wait() end
@@ -1700,6 +1700,7 @@ TabSettings:CreateButton({
         loadstring(game:HttpGet("https://spawnix.github.io/DevTools.rbxm/Loader/index.lua", true))()
     end,
 })
+
 TabSettings:CreateButton({
     name = "Ejetar script",
     description = "Desliga todas as funções, reverte alterações e remove a UI.",
