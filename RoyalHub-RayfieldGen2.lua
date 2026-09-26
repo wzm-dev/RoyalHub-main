@@ -16,6 +16,19 @@
 --  BOOT
 --============================================================================--
 
+--============================================================================--
+--  SINGLE INSTANCE: se já tem um RoyalHub vivo nesta sessão, não abre outro.
+--  (persistent + re-execução manual podem duplicar; o lock global impede)
+--============================================================================--
+if _G.RoyalHubLoaded and _G.RoyalHubUnload then
+    -- já existe um: destrói o ANTIGO e o novo assume (comportamento "takeover":
+    -- o painel fresco sempre vence, sem janela dupla na tela)
+    pcall(_G.RoyalHubUnload)
+    _G.RoyalHubLoaded = nil
+    _G.RoyalHubUnload = nil
+    task.wait(0.3)
+end
+
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
 
 -- Functions.lua (mesma dependência do Source original)
@@ -2641,8 +2654,12 @@ TabSettings:CreateButton({
             options = {
                 { text = "Cancelar" },
                 { text = "Ejetar", style = "danger", callback = function()
-                    pcall(function() G.unloadAll() end)  -- desliga tudo ANTES de matar a UI
-                    Window:Unload()
+                    if _G.RoyalHubUnload then
+                        _G.RoyalHubUnload()  -- unloadAll + Window:Unload + limpa o lock
+                    else
+                        pcall(function() G.unloadAll() end)
+                        Window:Unload()
+                    end
                 end },
             },
         })
@@ -2865,6 +2882,15 @@ end
 
 Players.PlayerAdded:Connect(function() task.defer(refreshPlayerDropdowns) end)
 Players.PlayerRemoving:Connect(function() task.defer(refreshPlayerDropdowns) end)
+
+-- registra a instância ATUAL como a única viva
+_G.RoyalHubLoaded = true
+_G.RoyalHubUnload = function()
+    pcall(function() G.unloadAll() end)
+    pcall(function() Window:Unload() end)
+    _G.RoyalHubLoaded = nil
+    _G.RoyalHubUnload = nil
+end
 
 Window:Notify({
     title = "Royal Hub",
