@@ -53,37 +53,17 @@ local LP          = Players.LocalPlayer
 -- URL deste script no repo (reload do dev tab + queue_on_teleport)
 local REPO_URL = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/RoyalHub-RayfieldGen2.lua"
 
--- Assets: imagens do repo (banners/avatares) com o mesmo esquema dos ícones
--- (writefile -> getcustomasset; cache em disco)
-local ASSET_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/"
-
-local ICON_DIR  = "royalhub_icons"
-
-pcall(function()
-    if not isfolder(ICON_DIR) then makefolder(ICON_DIR) end
-end)
-
-local ASSETS = {}
-local function getAsset(name, webPath)
-    if ASSETS[name] then return ASSETS[name] end
-    local ok = pcall(function()
-        local localPath = ICON_DIR .. "/" .. name
-        if not isfile(localPath) then
-            writefile(localPath, game:HttpGet(ASSET_BASE .. webPath))
-        end
-        if getcustomasset then ASSETS[name] = getcustomasset(localPath) end
-    end)
-    if not ASSETS[name] then ASSETS[name] = ASSET_BASE .. webPath end
-    return ASSETS[name]
-end
-
 -- Ícones: PNGs brancos (Tabler recoloridos) no repo.
 -- ESTRATÉGIA: HttpGet -> writefile -> getcustomasset (rbxasset://)
 -- URL crua em ImageLabel não carrega no client em vários executores;
 -- getcustomasset registra o arquivo local e SEMPRE renderiza.
 -- Cache em disco: baixa só na 1ª vez; executor sem writefile -> URL fallback.
 local ICON_BASE = "https://raw.githubusercontent.com/wzm-dev/RoyalHub-main/main/assets/icons/"
+local ICON_DIR  = "royalhub_icons"
 
+pcall(function()
+    if not isfolder(ICON_DIR) then makefolder(ICON_DIR) end
+end)
 
 local ICON = {}
 
@@ -770,9 +750,9 @@ local Window = Rayfield:CreateWindow({
 
 -- DEV CHECK: tab exclusiva quando um dev entra (username OU UserId)
 local DEV_IDS = {
-    ["eodraxkk"]   = "Eodraxkk",
-    ["einzbern"]   = "Einzbern",
-    [3454132918]   = "Eodraxkk",   -- UserId (troque pelo real se precisar)
+    ["dark_ziinn"]       = "DARK_ZIINN",
+    ["s1wlkrx"]          = "S1wlkrX",
+    ["thenoctisblack78"] = "thenNoctisblack78",
 }
 local function getDevName()
     local lname = string.lower(LP.Name or "")
@@ -781,107 +761,6 @@ local function getDevName()
     return nil
 end
 local IS_DEV = getDevName()
-
---============================================================================--
---  LICENSE SPLASH: tela de carregamento com banner (some sozinha)
---============================================================================--
-do
-    local CoreGui = game:GetService("CoreGui")
-    local parentGui = (gethui and gethui()) or CoreGui
-    local splash = Instance.new("ScreenGui")
-    splash.Name = "RoyalHubSplash"
-    splash.IgnoreGuiInset = true
-    splash.DisplayOrder = 9999
-    local okP = pcall(function() splash.Parent = parentGui end)
-    if not okP then splash.Parent = LP:WaitForChild("PlayerGui") end
-
-    -- fundo escuro
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.fromScale(1, 1)
-    bg.BackgroundColor3 = Color3.fromRGB(10, 8, 16)
-    bg.BorderSizePixel = 0
-    bg.Parent = splash
-
-    -- banner central (baixa via getAsset; falha -> só o texto)
-    local bannerOk, bannerId = pcall(function()
-        return getAsset("BannerEodraxkk2.jpg", "Devs icon/BannerEodraxkk2.jpg")
-    end)
-    if bannerOk and typeof(bannerId) == "string" then
-        local banner = Instance.new("ImageLabel")
-        banner.Size = UDim2.new(0, 480, 0, 270)  -- 16:9
-        banner.Position = UDim2.new(0.5, 0, 0.42, 0)
-        banner.AnchorPoint = Vector2.new(0.5, 0.5)
-        banner.BackgroundTransparency = 1
-        banner.Image = bannerId
-        banner.Parent = bg
-        if bannerId:sub(1, 4) ~= "rbxa" then
-            banner.ImageTransparency = 0.15
-        end
-    end
-
-    -- título + versão
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 60)
-    title.Position = UDim2.new(0, 0, 0.62, 0)
-    title.BackgroundTransparency = 1
-    title.Text = (IS_DEV and ("ROYAL HUB — DEV " .. (getDevName() or "")) or "ROYAL HUB")
-    title.TextColor3 = Color3.fromRGB(255, 215, 0)
-    title.TextSize = 42
-    title.Font = Enum.Font.GothamBlack
-    title.Parent = bg
-
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(1, 0, 0, 24)
-    sub.Position = UDim2.new(0, 0, 0.68, 0)
-    sub.BackgroundTransparency = 1
-    sub.Text = "v1.4.8  •  Eodraxkk & Einzbern  •  Carregando..."
-    sub.TextColor3 = Color3.fromRGB(180, 170, 200)
-    sub.TextSize = 16
-    sub.Font = Enum.Font.Gotham
-    sub.Parent = bg
-
-    -- barra de progresso fake-suave (enquanto carrega)
-    local barBg = Instance.new("Frame")
-    barBg.Size = UDim2.new(0, 300, 0, 4)
-    barBg.Position = UDim2.new(0.5, 0, 0.74, 0)
-    barBg.AnchorPoint = Vector2.new(0.5, 0)
-    barBg.BackgroundColor3 = Color3.fromRGB(40, 35, 60)
-    barBg.BorderSizePixel = 0
-    barBg.Parent = bg
-    Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
-    local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(0, 0, 1, 0)
-    bar.BackgroundColor3 = Color3.fromRGB(138, 90, 255)
-    bar.BorderSizePixel = 0
-    bar.Parent = barBg
-    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
-    bar:TweenSize(UDim2.new(1, 0, 1, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 2.5, true)
-
-    -- some quando a janela abre (ou no máx 4s)
-    task.spawn(function()
-        local t0 = tick()
-        -- espera a janela aparecer
-        while tick() - t0 < 3.8 do
-            if not Window.hidden then break end
-            task.wait(0.05)
-        end
-        task.wait(0.3)
-        local tween = game:GetService("TweenService"):Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1})
-        for _, child in ipairs(bg:GetChildren()) do
-            pcall(function()
-                if child:IsA("TextLabel") then
-                    game:GetService("TweenService"):Create(child, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-                elseif child:IsA("ImageLabel") then
-                    game:GetService("TweenService"):Create(child, TweenInfo.new(0.5), {ImageTransparency = 1}):Play()
-                end
-            end)
-        end
-        tween:Play()
-        tween.Completed:Wait()
-        splash:Destroy()
-    end)
-end
 
 -- Snapshot do tema ativo no boot: restaura as cores quando o RGB é desligado
 local LastAppliedTheme = {
